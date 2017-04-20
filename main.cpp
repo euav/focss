@@ -148,8 +148,8 @@ void tx_rx(const int& constellations, const int& point) {
 }
 
 int main() {
-    // left part
-    tx_rx(64, 10);
+    for (int k = 0; k < 21; ++k)
+        tx_rx(64, k);
 
     return 0;
 }
