@@ -1,5 +1,10 @@
 #include "../headers/signal.h"
 
+double Signal::null_power() const
+{
+	return 0.0;
+}
+
 double Signal::peak_power() const {
     double power = 0;
     for (int i = 0; i < size(); ++i)

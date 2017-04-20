@@ -14,6 +14,7 @@ class Signal : public ComplexVector {
   public:
     using ComplexVector::vector;
 
+	double null_power() const;
     double peak_power() const;
     double average_power() const;
     double peak_power(const int& from, const int& to) const;

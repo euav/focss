@@ -29,7 +29,7 @@ void forward_propagation(Signal& field) {
     double noise_variance = 2 * pow(10, noise_figure / 10);
     noise_variance *= pow(10, attenuation * distance / 10) - 1;
     noise_variance *= bandwidth * planck * light_speed / wavelength;
-
+	
     Fiber fiber(wavelength);
     fiber.setAttenuationDB(attenuation);
     fiber.setDispersionPhysical(dispersion);
