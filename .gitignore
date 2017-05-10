@@ -1,5 +1,5 @@
-*
+/*
 !.gitignore
-!sources/*
-!hearder/*
+!sources/*.cpp
+!hearder/*.h
 !main.cpp
