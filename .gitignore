@@ -1,0 +1,5 @@
+*
+!.gitignore
+!sources/*
+!hearder/*
+!main.cpp
