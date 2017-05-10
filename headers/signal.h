@@ -15,18 +15,21 @@ class Signal : public ComplexVector {
     using ComplexVector::vector;
 
     double peak_power() const;
-    double average_power() const;
     double peak_power(const int& from, const int& to) const;
+    double average_power() const;
     double average_power(const int& from, const int& to) const;
+
+    Signal upsample(const int& factor) const;
+    Signal downsample(const int& factor) const;
+    Signal chomp(const int& at_begin, const int& at_end) const;
+    
+    Signal& operator*=(const Complex& multiplier);
+    Signal& operator*=(const Signal& multipliers);
 
     Signal& fft_inplace();
     Signal& ifft_inplace();
-
-    Signal upsample(const int& factor);
-    Signal downsample(const int& factor);
-    Signal chomp(const int& at_begin, const int& at_end);
-    Signal& operator*=(const Complex& multiplier);
-    Signal& operator*=(const Signal& multipliers);
+    Signal& fft_shift();
+    Signal& apply_filter(const Signal& filter);
 };
 
 Signal convolution(const Signal& x, const Signal& y);

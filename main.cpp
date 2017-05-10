@@ -148,6 +148,8 @@ void tx_rx(const int& constellations, const int& point) {
 }
 
 int main() {
+    // simulate 21 transmissons of 64 16QAM constellations
+    // at launch power [-6dBm, 6dBm]
     for (int k = 0; k < 21; ++k)
         tx_rx(64, k);
 
