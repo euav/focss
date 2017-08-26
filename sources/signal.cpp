@@ -1,21 +1,8 @@
 #include "../headers/signal.h"
 
-double Signal::null_power() const
-{
-	return 0.0;
-}
-
 double Signal::peak_power() const {
     double power = 0;
     for (int i = 0; i < size(); ++i)
-        if (power < norm(at(i))) power = norm(at(i));
-
-    return power;
-}
-
-double Signal::peak_power(const int& from, const int& to) const {
-    double power = 0;
-    for (int i = from; i < to; ++i)
         if (power < norm(at(i))) power = norm(at(i));
 
     return power;
@@ -26,13 +13,6 @@ double Signal::average_power() const {
     for (int i = 0; i < size(); ++i) power += norm(at(i));
 
     return power / size();
-}
-
-double Signal::average_power(const int& from, const int& to) const {
-    double power = 0;
-    for (int i = from; i < to; ++i) power += norm(at(i));
-
-    return power / (to - from);
 }
 
 Signal Signal::upsample(const int& factor) const {
@@ -60,6 +40,20 @@ Signal Signal::chomp(const int& at_begin, const int& at_end) const {
     }
 
     return chomped;
+}
+
+Signal Signal::operator*(const Complex& multiplier) const {
+    Signal copy(*this);
+    for (int i = 0; i < copy.size(); ++i) copy[i] *= multiplier;
+    return copy;
+}
+
+Signal Signal::operator*(const Signal& multipliers) const {
+    Signal copy(*this);
+    if (size() == multipliers.size())
+        for (int i = 0; i < copy.size(); ++i) copy[i] *= multipliers[i];
+
+    return copy;
 }
 
 Signal& Signal::operator*=(const Complex& multiplier) {
@@ -114,7 +108,7 @@ Signal& Signal::fft_shift() {
 Signal& Signal::apply_filter(const Signal& filter) {
     Signal fft_filter(size(), 0);
     int half_size = filter.size() / 2;
-    int padding_shift = size() - half_size - 1;
+    int padding_shift = size() - half_size;
     for (int i = 0; i < filter.size() / 2; ++i) {
         fft_filter[i] = filter[i + half_size];
         fft_filter[padding_shift + i] = filter[i];

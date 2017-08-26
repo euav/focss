@@ -14,16 +14,18 @@ class Signal : public ComplexVector {
   public:
     using ComplexVector::vector;
 
-	double null_power() const;
     double peak_power() const;
-    double peak_power(const int& from, const int& to) const;
     double average_power() const;
-    double average_power(const int& from, const int& to) const;
-
+    
     Signal upsample(const int& factor) const;
     Signal downsample(const int& factor) const;
     Signal chomp(const int& at_begin, const int& at_end) const;
-    
+    //TODO: Signal& upsample_inplace(const int& factor);
+    //TODO: Signal& downsample_inplace(const int& factor);
+    //TODO: Signal& chomp_inplace(const int& at_begin, const int& at_end);
+
+    Signal operator*(const Complex& multiplier) const;
+    Signal operator*(const Signal& multipliers) const;
     Signal& operator*=(const Complex& multiplier);
     Signal& operator*=(const Signal& multipliers);
 
