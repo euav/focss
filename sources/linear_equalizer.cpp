@@ -5,11 +5,11 @@ LinearEqualizer::LinearEqualizer() {
     angle_steps = 360;
 }
 
-Signal LinearEqualizer::equalize(const Signal& original) const {
+Field LinearEqualizer::equalize(const Field& original) const {
     return rotate(original, estimated_angle);
 }
 
-void LinearEqualizer::train(const Signal& desired, const Signal& actual) {
+void LinearEqualizer::train(const Field& desired, const Field& actual) {
     double alpha, q2;
     double argmax_alpha = 0;
     double max_q2 = q2_factor(desired, actual);
@@ -26,7 +26,7 @@ void LinearEqualizer::train(const Signal& desired, const Signal& actual) {
     estimated_angle = argmax_alpha;
 }
 
-Signal LinearEqualizer::rotate(const Signal& original,
+Field LinearEqualizer::rotate(const Field& original,
                                const double& angle) const {
     return original * i_exp(angle);
 }

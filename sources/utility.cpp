@@ -21,7 +21,7 @@ void save_complex(const Complex &number, std::ostream &os) {
     os << "j";
 }
 
-void save_transmission(const Signal &tx, const Signal &rx, std::ostream &os) {
+void save_transmission(const Field &tx, const Field &rx, std::ostream &os) {
     int transmission_size = std::min(tx.size(), rx.size());
     if (transmission_size > 0) {
         os << "id,";
@@ -42,7 +42,7 @@ void save_transmission(const Signal &tx, const Signal &rx, std::ostream &os) {
 }
 */
 
-double q2_factor(const Signal& tx, const Signal& rx) {
+double q2_factor(const Field& tx, const Field& rx) {
     double numerator = 0;
     double denominator = 0;
 
@@ -59,7 +59,7 @@ double dbm_to_watts(const double& power_dbm) {
     return 1e-3 * std::pow(10, power_dbm / 10);
 }
 
-void awgn_generator(Signal& original, const double& variance) {
+void awgn_generator(Field& original, const double& variance) {
     std::default_random_engine generator(time(0));
     std::normal_distribution<double> noise(0, std::sqrt(variance / 2));
     for (int i = 0; i < original.size(); ++i)

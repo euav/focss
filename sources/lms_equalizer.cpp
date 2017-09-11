@@ -1,12 +1,20 @@
 #include "../headers/lms_equalizer.h"
 
-LmsEqualizer::LmsEqualizer() : order(1), weights(1, 0) {}
+LmsEqualizer::LmsEqualizer() : trained_flag(false), order(0) {}
 
 LmsEqualizer::LmsEqualizer(const int& filter_order)
-    : order(filter_order), weights(order, 0) {}
+    : trained_flag(false), order(filter_order), weights(filter_order, 0) {}
 
-void LmsEqualizer::train(const Signal& desired, const Signal& actual) {
+void LmsEqualizer::setFilterOrder(const int& filter_order) {
+    order = filter_order;
     weights.assign(order, 0);
+    trained_flag = false;
+}
+
+void LmsEqualizer::train(const Field& desired, const Field& actual) {
+    weights.assign(order, 0);
+
+    if (desired.size() != actual.size() || actual.size() < order) return;
 
     Complex residual, normalization, step;
     for (int i = order - 1; i < actual.size(); ++i) {
@@ -22,4 +30,14 @@ void LmsEqualizer::train(const Signal& desired, const Signal& actual) {
         for (int j = 0; j < order; ++j)
             weights[j] += step * conj(actual[i - j]);
     }
+
+    trained_flag = true;
+}
+
+Field LmsEqualizer::getWeights() const { return weights; }
+
+Field LmsEqualizer::equalize(const Field& original) const {
+    if (!trained_flag || original.size() < order) return original;
+
+    return convolution(original, weights).chomp(order - 1, 0);
 }

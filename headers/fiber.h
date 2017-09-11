@@ -26,12 +26,12 @@ class Fiber {
     void setTotalSteps(const double& steps);
     void setSamplingRate(const double& rate);
 
-    void propagate(Signal& field) const;
-    void compensateCD(Signal& field, const double& times = 1) const;
-    void amplify(Signal& field) const;
+    void propagate(Field& field) const;
+    void compensateCD(Field& field, const double& times = 1) const;
+    void amplify(Field& field) const;
 
   private:
-    Signal estimateLinearity(const int& samples) const;
+    Field estimateLinearity(const int& samples) const;
 };
 
 #endif  // FIBER_H_

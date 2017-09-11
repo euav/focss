@@ -4,8 +4,9 @@
 #include <string>
 #include "headers/fiber.h"
 #include "headers/linear_equalizer.h"
+#include "headers/lms_equalizer.h"
 #include "headers/modulation.h"
-#include "headers/signal.h"
+#include "headers/Field.h"
 #include "headers/utility.h"
 
 // reference units [m], [s], [W]
@@ -21,9 +22,40 @@ const double rrc_roll_off = 0.01;    // [1]
 const int pulse_width = 1024;        // [1]
 const int oversampling = 16;         // [1]
 const double forward_steps = 1000;   // [1]
-const double backward_steps = 10;    // [1]
+const double backward_steps = 100;    // [1]
 
-void forward_propagation(Signal& field) {
+Field random_16qam_symbols(const int& constellations) {
+    Field symbols(16 * constellations);
+    for (int i = 0; i < constellations; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            symbols[16 * i + j] = gray_symbols_16qam[j];
+        }
+    }
+    std::srand(time(0));
+    std::random_shuffle(symbols.begin(), symbols.end());
+
+    return symbols;
+}
+
+Field modulate_rrc(const Field& symbols, const double& launch_power) {
+    Field rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    Field field = symbols.upsample(oversampling);
+    field.apply_filter(rrc);
+    field *= std::sqrt(launch_power / field.average_power());
+
+    return field;
+}
+
+Field match_rrc(const Field& field, const int& osf) {
+    Field rrc = rrc_filter(osf, rrc_roll_off, pulse_width);
+    Field matched = field;
+    matched = matched.apply_filter(rrc).downsample(osf);
+    matched *= std::sqrt(1.0 / matched.average_power());
+
+    return matched;
+}
+
+void forward_propagation(Field& field) {
     std::cout << ">> forward propagation" << std::endl;
 
     double noise_variance = 0.5 * pow(10, noise_figure / 10);
@@ -47,7 +79,7 @@ void forward_propagation(Signal& field) {
     std::cout << std::endl;
 }
 
-void cd_compensation(Signal& field) {
+void cd_compensation(Field& field) {
     Fiber fiber(wavelength);
     fiber.setAttenuationDB(attenuation);
     fiber.setDispersionPhysical(dispersion);
@@ -58,7 +90,7 @@ void cd_compensation(Signal& field) {
     fiber.compensateCD(field, spans);
 }
 
-void backward_propagation(Signal& field) {
+void backward_propagation(Field& field) {
     std::cout << ">> backward propagation" << std::endl;
 
     Fiber fiber(wavelength);
@@ -78,41 +110,24 @@ void backward_propagation(Signal& field) {
 
 void tx_rx(const int& constellations, const double& launch_power) {
     std::cout.precision(15);
-
-    // symbols generation
-    Signal symbols(16 * constellations);
-    for (int i = 0; i < constellations; ++i) {
-        for (int j = 0; j < 16; ++j) {
-            symbols[16 * i + j] = gray_symbols_16qam[j];
-        }
-    }
-    std::srand(time(0));
-    std::random_shuffle(symbols.begin(), symbols.end());
-
-    // signal forming
-    Signal field = symbols.upsample(oversampling);
-    Signal rrc16 = rrc_filter(oversampling, rrc_roll_off, pulse_width);
-    Signal rrc2 = rrc_filter(2, rrc_roll_off, pulse_width);
-    field.apply_filter(rrc16);
-    field *= std::sqrt(0.5 * launch_power / field.average_power());
+    Field symbols = random_16qam_symbols(constellations);
+    Field field = modulate_rrc(symbols, 0.5 * launch_power);
 
     // propagation
     forward_propagation(field);
-    Signal dbp_field = field.downsample(8);
+    Field dbp_field = field.downsample(8);
     backward_propagation(dbp_field);
     cd_compensation(field);
 
-    // signal matching
-    field = field.apply_filter(rrc16).downsample(oversampling);
-    field *= std::sqrt(1.0 / field.average_power());
-    dbp_field = dbp_field.apply_filter(rrc2).downsample(2);
-    dbp_field *= std::sqrt(1.0 / dbp_field.average_power());
-    std::cout << ">> signals has matched" << std::endl;
+    // Field matching
+    field = match_rrc(field, oversampling);
+    dbp_field = match_rrc(dbp_field, 2);
+    std::cout << ">> Fields has matched" << std::endl;
 
     // linear equalization
     LinearEqualizer leq;
     leq.train(symbols, field);
-    Signal leq_field = leq.equalize(field);
+    Field leq_field = leq.equalize(field);
     std::cout << ">> linear equalization has done" << std::endl;
 
     // saving results
@@ -120,7 +135,7 @@ void tx_rx(const int& constellations, const double& launch_power) {
     std::ofstream fout(filename);
     fout.precision(15);
 
-    fout << "# [ AVG POWER, CD Q2, CD LEQ Q2, DBP Q2 ] = " << launch_power
+    fout << "# [ AVG POWER, CD, LEQ, DBP ] = " << launch_power
          << " ";
     fout << q2_factor(symbols, field) << " ";
     fout << q2_factor(symbols, leq_field) << " ";
@@ -141,9 +156,9 @@ void tx_rx(const int& constellations, const double& launch_power) {
 }
 
 void check_pulse_and_match_sampling() {
-    // generate random signal
+    // generate random Field
     int constellations = 256;
-    Signal symbols(16 * constellations);
+    Field symbols(16 * constellations);
     for (int i = 0; i < constellations; ++i) {
         for (int j = 0; j < 16; ++j) {
             symbols[16 * i + j] = gray_symbols_16qam[j];
@@ -152,13 +167,13 @@ void check_pulse_and_match_sampling() {
     std::srand(time(0));
     std::random_shuffle(symbols.begin(), symbols.end());
 
-    Signal field = symbols.upsample(oversampling);
-    Signal rrc16 = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    Field field = symbols.upsample(oversampling);
+    Field rrc16 = rrc_filter(oversampling, rrc_roll_off, pulse_width);
     field.apply_filter(rrc16);
 
-    // match signal and output constellations
+    // match Field and output constellations
     field = field.downsample(8);
-    Signal rrc2 = rrc_filter(2, rrc_roll_off, pulse_width);
+    Field rrc2 = rrc_filter(2, rrc_roll_off, pulse_width);
     field.apply_filter(rrc2);
     field = field.downsample(2);
     field *= std::sqrt(1 / field.average_power());
@@ -169,7 +184,7 @@ void check_pulse_and_match_sampling() {
 }
 
 void check_different_sps_filter_spectra(const int& sps) {
-    Signal rrc = rrc_filter(sps, rrc_roll_off, pulse_width);
+    Field rrc = rrc_filter(sps, rrc_roll_off, pulse_width);
     rrc.fft_shift().fft_inplace().fft_shift();
 
     double T = pulse_width / bandwidth;
@@ -181,7 +196,7 @@ void check_different_sps_filter_spectra(const int& sps) {
 
 void check_different_sps_spectra_broadering(const int& sps) {
     int constellations = 64;
-    Signal symbols(16 * constellations);
+    Field symbols(16 * constellations);
     for (int i = 0; i < constellations; ++i) {
         for (int j = 0; j < 16; ++j) {
             symbols[16 * i + j] = gray_symbols_16qam[j];
@@ -190,8 +205,8 @@ void check_different_sps_spectra_broadering(const int& sps) {
     std::srand(time(0));
     std::random_shuffle(symbols.begin(), symbols.end());
 
-    Signal field = symbols.upsample(sps);
-    Signal rrc = rrc_filter(sps, rrc_roll_off, pulse_width);
+    Field field = symbols.upsample(sps);
+    Field rrc = rrc_filter(sps, rrc_roll_off, pulse_width);
     field.apply_filter(rrc);
     field *= std::sqrt(dbm_to_watts(0) / field.average_power());
 
@@ -216,7 +231,7 @@ void check_different_sps_spectra_broadering(const int& sps) {
 }
 
 void check_noise_power(const int& N) {
-    Signal zero(N, 0);
+    Field zero(N, 0);
     awgn_generator(zero, 4 * N);
     std::cout << zero.average_power() << std::endl;
     zero.fft_inplace();
@@ -225,7 +240,7 @@ void check_noise_power(const int& N) {
 
 void check_noise_variance() {
     int constellations = 256;
-    Signal symbols(16 * constellations);
+    Field symbols(16 * constellations);
     for (int i = 0; i < constellations; ++i) {
         for (int j = 0; j < 16; ++j) {
             symbols[16 * i + j] = gray_symbols_16qam[j];
@@ -234,8 +249,8 @@ void check_noise_variance() {
     std::srand(time(0));
     std::random_shuffle(symbols.begin(), symbols.end());
 
-    Signal field = symbols.upsample(oversampling);
-    Signal rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    Field field = symbols.upsample(oversampling);
+    Field rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
     field.apply_filter(rrc);
     field *= std::sqrt(dbm_to_watts(0) / field.average_power());
 
@@ -259,7 +274,7 @@ void check_noise_variance() {
 
 void check_width() {
     int constellations = 64;
-    Signal symbols(16 * constellations);
+    Field symbols(16 * constellations);
     for (int i = 0; i < constellations; ++i) {
         for (int j = 0; j < 16; ++j) {
             symbols[16 * i + j] = gray_symbols_16qam[j];
@@ -268,8 +283,8 @@ void check_width() {
     std::srand(time(0));
     std::random_shuffle(symbols.begin(), symbols.end());
 
-    Signal field = symbols.upsample(oversampling);
-    Signal rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    Field field = symbols.upsample(oversampling);
+    Field rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
     field.apply_filter(rrc);
     field *= std::sqrt(dbm_to_watts(0) / field.average_power());
     field.apply_filter(rrc);
@@ -283,7 +298,34 @@ void check_width() {
     }
 }
 
+void check_lms() {
+    Field symbols = random_16qam_symbols(64);
+    Field field = modulate_rrc(symbols, 0.5 * dbm_to_watts(0));
+    forward_propagation(field);
+    cd_compensation(field);
+    field = match_rrc(field, oversampling);
+    std::cout << ">> Fields has matched" << std::endl;
+
+    // linear equalization
+    LinearEqualizer leq;
+    leq.train(symbols, field);
+    Field leq_field = leq.equalize(field);
+    std::cout << ">> linear equalization has done" << std::endl;
+
+    // lms equalization
+    LmsEqualizer lms(3);
+    lms.train(symbols, field);
+    Field lms_field = lms.equalize(field);
+    std::cout << ">> least-mean square equalization has done" << std::endl;
+
+    std::cout << "Q2 of [CD, LEQ, LMS]" << std::endl;
+    std::cout << q2_factor(symbols, field) << std::endl;
+    std::cout << q2_factor(symbols, leq_field) << std::endl;
+    std::cout << q2_factor(symbols, lms_field) << std::endl;
+}
+
 int main() {
-    tx_rx(64, dbm_to_watts(6));
+    tx_rx(64, dbm_to_watts(0));
+    //check_lms();
     return 0;
 }

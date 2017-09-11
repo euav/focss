@@ -1,8 +1,8 @@
 #include "../headers/modulation.h"
 #include "../headers/utility.h"
 
-Signal sech_pulse(const int& nodes_quantity, const double& width) {
-    Signal sech_pulse(nodes_quantity, 0);
+Field sech_pulse(const int& nodes_quantity, const double& width) {
+    Field sech_pulse(nodes_quantity, 0);
     double argument;
     for (int i = 0; i < nodes_quantity; i++) {
         argument = double(i) / (nodes_quantity - 1.0);
@@ -14,8 +14,8 @@ Signal sech_pulse(const int& nodes_quantity, const double& width) {
     return sech_pulse;
 }
 
-Signal rrc_filter(const int& samples, const double& roll_off, const int& N) {
-    Signal filter(N * samples, 0);
+Field rrc_filter(const int& samples, const double& roll_off, const int& N) {
+    Field filter(N * samples, 0);
 
     for (int i = 0; i < N * samples; ++i) {
         double t = double(i) / samples - N / 2.0;
@@ -38,8 +38,8 @@ Signal rrc_filter(const int& samples, const double& roll_off, const int& N) {
     return filter *= 1.0 / filter.peak_power();
 }
 
-Signal modulate_16qam(const Information& data) {
-    Signal symbols(data.size(), 0);
+Field modulate_16qam(const Information& data) {
+    Field symbols(data.size(), 0);
     for (int i = 0; i < data.size(); ++i) {
         InformationType code = data[i];
         symbols[i] = gray_symbols_16qam[code & 0x0F];
@@ -48,7 +48,7 @@ Signal modulate_16qam(const Information& data) {
     return symbols;
 }
 
-Information demodulate_16qam(const Signal& signal) {
+Information demodulate_16qam(const Field& signal) {
     Information data(signal.size());
 
     InformationType argmin;

@@ -4,15 +4,15 @@
 #include <cmath>
 #include <complex>
 #include <random>
-#include "signal.h"
+#include "field.h"
 
 void relax_max(double& a, const double& b);
 void relax_mix(double& a, const double& b);
 double sinc(const double& x);
 
-double q2_factor(const Signal& tx, const Signal& rx);
+double q2_factor(const Field& tx, const Field& rx);
 double dbm_to_watts(const double& power_dbm);
-void awgn_generator(Signal& original, const double& variance);
+void awgn_generator(Field& original, const double& variance);
 
 Complex i_exp(const double& x);
 

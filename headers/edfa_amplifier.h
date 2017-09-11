@@ -1,7 +1,7 @@
 #ifndef EDFA_AMPLIFIER_H_
 #define EDFA_AMPLIFIER_H_
 
-#include "signal.h"
+#include "field.h"
 const double boltzmann = 1.38064852e-23;
 
 class EdfaAmplifier {
@@ -16,7 +16,7 @@ class EdfaAmplifier {
     void setNoiseFigure();
     void setBandwidth();
 
-    void amplify(Signal& field) const;
+    void amplify(Field& field) const;
 };
 
 #endif  // EDFA_AMPLIFIER_H_

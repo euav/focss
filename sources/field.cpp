@@ -1,6 +1,6 @@
-#include "../headers/signal.h"
+#include "../headers/field.h"
 
-double Signal::peak_power() const {
+double Field::peak_power() const {
     double power = 0;
     for (int i = 0; i < size(); ++i)
         if (power < norm(at(i))) power = norm(at(i));
@@ -8,15 +8,15 @@ double Signal::peak_power() const {
     return power;
 }
 
-double Signal::average_power() const {
+double Field::average_power() const {
     double power = 0;
     for (int i = 0; i < size(); ++i) power += norm(at(i));
 
     return power / size();
 }
 
-Signal Signal::upsample(const int& factor) const {
-    Signal upsampled(factor * size(), 0);
+Field Field::upsample(const int& factor) const {
+    Field upsampled(factor * size(), 0);
     upsampled.sampling_rate *= factor;
     for (int i = 0; i < size(); ++i) {
         upsampled[factor * i] = at(i);
@@ -25,8 +25,8 @@ Signal Signal::upsample(const int& factor) const {
     return upsampled;
 }
 
-Signal Signal::downsample(const int& factor) const {
-    Signal downsampled(size() / factor);
+Field Field::downsample(const int& factor) const {
+    Field downsampled(size() / factor);
     downsampled.sampling_rate /= factor;
     for (int i = 0; i < downsampled.size(); ++i) {
         downsampled[i] = at(i * factor);
@@ -35,8 +35,8 @@ Signal Signal::downsample(const int& factor) const {
     return downsampled;
 }
 
-Signal Signal::chomp(const int& at_begin, const int& at_end) const {
-    Signal chomped(size() - at_begin - at_end);
+Field Field::chomp(const int& at_begin, const int& at_end) const {
+    Field chomped(size() - at_begin - at_end);
     for (int i = 0; i < chomped.size(); ++i) {
         chomped[i] = at(i + at_begin);
     }
@@ -44,32 +44,32 @@ Signal Signal::chomp(const int& at_begin, const int& at_end) const {
     return chomped;
 }
 
-Signal Signal::operator*(const Complex& multiplier) const {
-    Signal copy(*this);
+Field Field::operator*(const Complex& multiplier) const {
+    Field copy(*this);
     for (int i = 0; i < copy.size(); ++i) copy[i] *= multiplier;
     return copy;
 }
 
-Signal Signal::operator*(const Signal& multipliers) const {
-    Signal copy(*this);
+Field Field::operator*(const Field& multipliers) const {
+    Field copy(*this);
     if (size() == multipliers.size())
         for (int i = 0; i < copy.size(); ++i) copy[i] *= multipliers[i];
 
     return copy;
 }
 
-Signal& Signal::operator*=(const Complex& multiplier) {
+Field& Field::operator*=(const Complex& multiplier) {
     for (int i = 0; i < size(); ++i) at(i) *= multiplier;
     return *this;
 }
 
-Signal& Signal::operator*=(const Signal& multipliers) {
+Field& Field::operator*=(const Field& multipliers) {
     if (size() == multipliers.size())
         for (int i = 0; i < size(); ++i) at(i) *= multipliers[i];
     return *this;
 }
 
-Signal& Signal::fft_inplace() {
+Field& Field::fft_inplace() {
     fftw_plan complex_inplace =
         fftw_plan_dft_1d(size(),
                          reinterpret_cast<fftw_complex*>(data()),
@@ -83,7 +83,7 @@ Signal& Signal::fft_inplace() {
     return *this;
 }
 
-Signal& Signal::ifft_inplace() {
+Field& Field::ifft_inplace() {
     fftw_plan complex_inplace =
         fftw_plan_dft_1d(size(),
                          reinterpret_cast<fftw_complex*>(data()),
@@ -95,7 +95,7 @@ Signal& Signal::ifft_inplace() {
     return *this;
 }
 
-Signal& Signal::fft_shift() {
+Field& Field::fft_shift() {
     Complex buffer;
     int half_size = size() / 2;
     for (int i = 0; i < half_size; ++i) {
@@ -107,8 +107,8 @@ Signal& Signal::fft_shift() {
     return *this;
 }
 
-Signal& Signal::apply_filter(const Signal& filter) {
-    Signal fft_filter(size(), 0);
+Field& Field::apply_filter(const Field& filter) {
+    Field fft_filter(size(), 0);
     int half_size = filter.size() / 2;
     int padding_shift = size() - half_size;
     for (int i = 0; i < filter.size() / 2; ++i) {
@@ -120,8 +120,8 @@ Signal& Signal::apply_filter(const Signal& filter) {
     return ifft_inplace();
 }
 
-Signal convolution(const Signal& x, const Signal& y) {
-    Signal z(x.size() + y.size() - 1);
+Field convolution(const Field& x, const Field& y) {
+    Field z(x.size() + y.size() - 1);
     for (int i = 0; i < x.size(); ++i)
         for (int j = 0; j < y.size(); ++j) z[i + j] += x[i] * y[j];
 
