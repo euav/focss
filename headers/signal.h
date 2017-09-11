@@ -11,18 +11,20 @@ typedef std::vector<Complex> ComplexVector;
 const Complex i_unit = Complex(0, 1);
 
 class Signal : public ComplexVector {
+  double sampling_rate;
+
   public:
     using ComplexVector::vector;
+    // Signal();
+    // Signal(const int& size);
+    // Signal(const int& size, const int& default_value);
 
     double peak_power() const;
     double average_power() const;
-    
+
     Signal upsample(const int& factor) const;
     Signal downsample(const int& factor) const;
     Signal chomp(const int& at_begin, const int& at_end) const;
-    //TODO: Signal& upsample_inplace(const int& factor);
-    //TODO: Signal& downsample_inplace(const int& factor);
-    //TODO: Signal& chomp_inplace(const int& at_begin, const int& at_end);
 
     Signal operator*(const Complex& multiplier) const;
     Signal operator*(const Signal& multipliers) const;

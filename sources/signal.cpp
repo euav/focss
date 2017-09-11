@@ -17,6 +17,7 @@ double Signal::average_power() const {
 
 Signal Signal::upsample(const int& factor) const {
     Signal upsampled(factor * size(), 0);
+    upsampled.sampling_rate *= factor;
     for (int i = 0; i < size(); ++i) {
         upsampled[factor * i] = at(i);
     }
@@ -26,6 +27,7 @@ Signal Signal::upsample(const int& factor) const {
 
 Signal Signal::downsample(const int& factor) const {
     Signal downsampled(size() / factor);
+    downsampled.sampling_rate /= factor;
     for (int i = 0; i < downsampled.size(); ++i) {
         downsampled[i] = at(i * factor);
     }

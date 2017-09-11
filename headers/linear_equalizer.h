@@ -1,7 +1,7 @@
 #ifndef LINEAR_EQUALIZER_H_
 #define LINEAR_EQUALIZER_H_
 
-#include "modulation.h"
+#include "signal.h"
 #include "utility.h"
 
 class LinearEqualizer {
@@ -10,7 +10,7 @@ class LinearEqualizer {
 
   public:
     LinearEqualizer();
-    double train(const Signal& tx, const Signal& rx);
+    void train(const Signal& desired, const Signal& actual);
     Signal equalize(const Signal& original) const;
 
   private:

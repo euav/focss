@@ -65,3 +65,7 @@ void awgn_generator(Signal& original, const double& variance) {
     for (int i = 0; i < original.size(); ++i)
         original[i] += Complex(noise(generator), noise(generator));
 }
+
+Complex i_exp(const double& x) {
+    return Complex(std::cos(x), std::sin(x));
+}

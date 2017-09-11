@@ -12,24 +12,25 @@
 const double bandwidth = 32e9;       // [baud]
 const double distance = 1e5;         // [m]
 const double spans = 10;             // [1]
-const double noise_figure = 5.5;     // [dB]
+const double noise_figure = 4.5;     // [dB]
 const double attenuation = 2e-4;     // [dB/m]
 const double dispersion = 1.7e-5;    // [s/m/m]
 const double wavelength = 1.55e-6;   // [m]
-const double nonlinearity = 1.4e-3;  // [1/W/m]
+const double nonlinearity = (16.0 / 9.0) * 1.4e-3;  // [1/W/m]
 const double rrc_roll_off = 0.01;    // [1]
 const int pulse_width = 1024;        // [1]
 const int oversampling = 16;         // [1]
-const int forward_steps = 1000;      // [1]
-const int backward_steps = 25;     // [1]
+const double forward_steps = 1000;   // [1]
+const double backward_steps = 10;    // [1]
 
 void forward_propagation(Signal& field) {
     std::cout << ">> forward propagation" << std::endl;
 
-    double noise_variance = 2 * pow(10, noise_figure / 10);
+    double noise_variance = 0.5 * pow(10, noise_figure / 10);
     noise_variance *= pow(10, attenuation * distance / 10) - 1;
-    noise_variance *= 0 * bandwidth * planck * light_speed / wavelength;
-	
+    noise_variance *= planck * light_speed / wavelength;
+    noise_variance *= oversampling * bandwidth;
+
     Fiber fiber(wavelength);
     fiber.setAttenuationDB(attenuation);
     fiber.setDispersionPhysical(dispersion);
@@ -93,7 +94,7 @@ void tx_rx(const int& constellations, const double& launch_power) {
     Signal rrc16 = rrc_filter(oversampling, rrc_roll_off, pulse_width);
     Signal rrc2 = rrc_filter(2, rrc_roll_off, pulse_width);
     field.apply_filter(rrc16);
-    field *= std::sqrt(launch_power / field.average_power());
+    field *= std::sqrt(0.5 * launch_power / field.average_power());
 
     // propagation
     forward_propagation(field);
@@ -119,9 +120,11 @@ void tx_rx(const int& constellations, const double& launch_power) {
     std::ofstream fout(filename);
     fout.precision(15);
 
-    fout << "# [ AVG POWER, DBP Q2, LEQ Q2 ] = " << launch_power << " ";
-    fout << q2_factor(symbols, dbp_field) << " ";
-    fout << q2_factor(symbols, leq_field) << std::endl;
+    fout << "# [ AVG POWER, CD Q2, CD LEQ Q2, DBP Q2 ] = " << launch_power
+         << " ";
+    fout << q2_factor(symbols, field) << " ";
+    fout << q2_factor(symbols, leq_field) << " ";
+    fout << q2_factor(symbols, dbp_field) << std::endl;
 
     for (int i = 0; i < symbols.size(); ++i) {
         fout << symbols[i].real() << " ";
@@ -138,31 +141,31 @@ void tx_rx(const int& constellations, const double& launch_power) {
 }
 
 void check_pulse_and_match_sampling() {
-     // generate random signal
-     int constellations = 256;
-     Signal symbols(16 * constellations);
-     for (int i = 0; i < constellations; ++i) {
-         for (int j = 0; j < 16; ++j) {
-             symbols[16 * i + j] = gray_symbols_16qam[j];
-         }
-     }
-     std::srand(time(0));
-     std::random_shuffle(symbols.begin(), symbols.end());
- 
-     Signal field = symbols.upsample(oversampling);
-     Signal rrc16 = rrc_filter(oversampling, rrc_roll_off, pulse_width);
-     field.apply_filter(rrc16);
- 
-     // match signal and output constellations
-     field = field.downsample(8);
-     Signal rrc2 = rrc_filter(2, rrc_roll_off, pulse_width);
-     field.apply_filter(rrc2);
-     field = field.downsample(2);
-     field *= std::sqrt(1 / field.average_power());
-     for (int i = 0; i < field.size(); ++i) {
-         std::cout << field[i].real() << " ";
-         std::cout << field[i].imag() << "\n";
-     }
+    // generate random signal
+    int constellations = 256;
+    Signal symbols(16 * constellations);
+    for (int i = 0; i < constellations; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            symbols[16 * i + j] = gray_symbols_16qam[j];
+        }
+    }
+    std::srand(time(0));
+    std::random_shuffle(symbols.begin(), symbols.end());
+
+    Signal field = symbols.upsample(oversampling);
+    Signal rrc16 = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    field.apply_filter(rrc16);
+
+    // match signal and output constellations
+    field = field.downsample(8);
+    Signal rrc2 = rrc_filter(2, rrc_roll_off, pulse_width);
+    field.apply_filter(rrc2);
+    field = field.downsample(2);
+    field *= std::sqrt(1 / field.average_power());
+    for (int i = 0; i < field.size(); ++i) {
+        std::cout << field[i].real() << " ";
+        std::cout << field[i].imag() << "\n";
+    }
 }
 
 void check_different_sps_filter_spectra(const int& sps) {
@@ -212,7 +215,75 @@ void check_different_sps_spectra_broadering(const int& sps) {
     }
 }
 
+void check_noise_power(const int& N) {
+    Signal zero(N, 0);
+    awgn_generator(zero, 4 * N);
+    std::cout << zero.average_power() << std::endl;
+    zero.fft_inplace();
+    std::cout << zero.average_power() << std::endl;
+}
+
+void check_noise_variance() {
+    int constellations = 256;
+    Signal symbols(16 * constellations);
+    for (int i = 0; i < constellations; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            symbols[16 * i + j] = gray_symbols_16qam[j];
+        }
+    }
+    std::srand(time(0));
+    std::random_shuffle(symbols.begin(), symbols.end());
+
+    Signal field = symbols.upsample(oversampling);
+    Signal rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    field.apply_filter(rrc);
+    field *= std::sqrt(dbm_to_watts(0) / field.average_power());
+
+    // adding gaussian noise
+    double noise_variance = oversampling * pow(10, noise_figure / 10);
+    noise_variance *= pow(10, attenuation * std::log(10) * distance / 100) - 1;
+    noise_variance *= bandwidth * planck * light_speed / wavelength;
+
+    // field.fft_inplace();
+    awgn_generator(field, 10 * noise_variance);
+    // field.ifft_inplace();
+
+    field = field.apply_filter(rrc).downsample(16);
+    field *= std::sqrt(1 / field.average_power());
+    std::cout << "# Q2 = " << q2_factor(symbols, field) << std::endl;
+    for (int i = 0; i < field.size(); ++i) {
+        std::cout << field[i].real() << " ";
+        std::cout << field[i].imag() << "\n";
+    }
+}
+
+void check_width() {
+    int constellations = 64;
+    Signal symbols(16 * constellations);
+    for (int i = 0; i < constellations; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            symbols[16 * i + j] = gray_symbols_16qam[j];
+        }
+    }
+    std::srand(time(0));
+    std::random_shuffle(symbols.begin(), symbols.end());
+
+    Signal field = symbols.upsample(oversampling);
+    Signal rrc = rrc_filter(oversampling, rrc_roll_off, pulse_width);
+    field.apply_filter(rrc);
+    field *= std::sqrt(dbm_to_watts(0) / field.average_power());
+    field.apply_filter(rrc);
+    field *= std::sqrt(1 / field.average_power());
+    field.fft_inplace().fft_shift();
+
+    double freq_step = oversampling * bandwidth / field.size();
+    for (int i = 0; i < field.size(); ++i) {
+        std::cout <<  (i * freq_step - 0.5 * field.size() * freq_step) / 1e9 << " ";
+        std::cout << norm(field[i]) << "\n";
+    }
+}
+
 int main() {
-    tx_rx(64, dbm_to_watts(0));
+    tx_rx(64, dbm_to_watts(6));
     return 0;
 }
