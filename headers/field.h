@@ -8,10 +8,12 @@
 
 typedef std::complex<double> Complex;
 typedef std::vector<Complex> ComplexVector;
+typedef std::vector<double> RealVector;
 const Complex i_unit = Complex(0, 1);
 
 class Field : public ComplexVector {
   double sampling_rate;
+  RealVector omega;
 
   public:
     using ComplexVector::vector;
@@ -30,6 +32,13 @@ class Field : public ComplexVector {
     Field operator*(const Field& multipliers) const;
     Field& operator*=(const Complex& multiplier);
     Field& operator*=(const Field& multipliers);
+
+    void setSampligRate(const double& rate);
+    double getSamplingRate() const;
+    double f(const int& i) const;
+    double w(const int& i) const;
+    RealVector temporal_power() const;
+    RealVector spectral_power() const;
 
     Field& fft_inplace();
     Field& ifft_inplace();

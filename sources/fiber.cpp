@@ -2,14 +2,16 @@
 #include <iostream>
 
 Fiber::Fiber(const double& center_wavelength) {
-    wavelength = center_wavelength;
-
     alpha = 0;
     beta2 = 0;
     gamma = 0;
-    fiber_length = 0;
-    sampling_rate = 0;
+    length = 0;
+    wavelength = center_wavelength;
+
+    uniform_grid = true;
     total_steps = 0;
+    max_ps = 0;
+    max_step = 0;
 }
 
 void Fiber::setAttenuation(const double& alpha) { this->alpha = alpha; }
@@ -29,57 +31,69 @@ void Fiber::setDispersionEngineering(const double& beta2) {
 
 void Fiber::setNonlinearity(const double& gamma) { this->gamma = gamma; }
 
-void Fiber::setFiberLength(const double& length) {
-    this->fiber_length = length;
+void Fiber::setFiberLength(const double& length) { this->length = length; }
+
+void Fiber::setTotalSteps(const int& steps) {
+    uniform_grid = true;
+    total_steps = steps;
 }
 
-void Fiber::setTotalSteps(const double& steps) { this->total_steps = steps; }
+void Fiber::setMaximumShiftAndStep(const double& shift, const double& step) {
+    uniform_grid = false;
+    max_ps = shift;
+    max_step = step;
+}
 
-void Fiber::setSamplingRate(const double& rate) { this->sampling_rate = rate; }
+void Fiber::linearStep(Field& field, const double& step) const {
+    field *= exp(-0.5 * alpha * step);
 
-Field Fiber::estimateLinearity(const int& samples) const {
-    double freq;
-    double freq_step = 2 * M_PI * sampling_rate / samples;
-    double step = fiber_length / total_steps;
+    field.fft_inplace();
+    for (int i = 0; i < field.size(); ++i)
+        field[i] *= i_exp(-0.5 * beta2 * field.w(i) * field.w(i) * step);
+    field.ifft_inplace();
+}
 
-    Field linearity(samples, exp(-0.5 * alpha * step));
-    for (int i = 0; i < samples; ++i) {
-        if (i <= samples / 2)
-            freq = freq_step * i;
-        else
-            freq = freq_step * (i - samples);
-
-        linearity[i] *= i_exp(-0.5 * beta2 * freq * freq * step); 
-    }
-
-    return linearity;
+void Fiber::nonlinearStep(Field& field, const double& step) const {
+    for (int j = 0; j < field.size(); ++j)
+        field[j] *= i_exp(gamma * step * norm(field[j]));
 }
 
 void Fiber::propagate(Field& field) const {
-    int samples = field.size();
-    double step = fiber_length / total_steps;
-    Field linearity = estimateLinearity(samples);
+    if (uniform_grid) {
+        double step = length / total_steps;
 
-    for (int j = 0; j < samples; ++j)
-        field[j] *= i_exp(0.5 * gamma * step * norm(field[j]));
+        linearStep(field, 0.5 * step);
+        for (int i = 0; i < total_steps; ++i) {
+            nonlinearStep(field, step);
+            linearStep(field, step);
+        }
+        linearStep(field, -0.5 * step);
+    } else {
+        double distance = 0;
+        double phase_shift = std::abs(gamma) * field.peak_power();
+        double step = std::min(max_step, max_ps / phase_shift);
 
-    for (int i = 0; i < total_steps; ++i) {
-        field.fft_inplace();
-        field *= linearity;
-        field.ifft_inplace();
+        while (distance + step < length) {
+            linearStep(field, 0.5 * step);
+            nonlinearStep(field, step);
+            linearStep(field, 0.5 * step);
 
-        for (int j = 0; j < samples; ++j)
-            field[j] *= i_exp(gamma * step * norm(field[j]));
+            distance += step;
+            phase_shift = std::abs(gamma) * field.peak_power();
+            step = std::min(max_step, max_ps / phase_shift);
+        }
+
+        step = length - distance;
+        linearStep(field, 0.5 * step);
+        nonlinearStep(field, step);
+        linearStep(field, 0.5 * step);
     }
-
-    for (int j = 0; j < samples; ++j)
-        field[j] *= i_exp(-0.5 * gamma * step * norm(field[j]));
 }
 
 void Fiber::compensateCD(Field& field, const double& times) const {
     int samples = field.size();
     double freq;
-    double freq_step = 2 * M_PI * sampling_rate / samples;
+    double freq_step = 2 * M_PI * field.getSamplingRate() / samples;
 
     field.fft_inplace();
     for (int i = 0; i < samples; ++i) {
@@ -88,11 +102,9 @@ void Fiber::compensateCD(Field& field, const double& times) const {
         else
             freq = freq_step * (i - samples);
 
-        field[i] *= i_exp(0.5 * beta2 * freq * freq * times * fiber_length);
+        field[i] *= i_exp(0.5 * beta2 * freq * freq * times * length);
     }
     field.ifft_inplace();
 }
 
-void Fiber::amplify(Field& field) const {
-    field *= exp(0.5 * alpha * fiber_length);
-}
+void Fiber::amplify(Field& field) const { field *= exp(0.5 * alpha * length); }

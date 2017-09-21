@@ -1,11 +1,7 @@
 #ifndef MODULATION_H_
 #define MODULATION_H_
 
-#include <vector>
-#include "utility.h"
-
-typedef int InformationType;
-typedef std::vector<InformationType> Information;
+#include "field.h"
 
 const Complex gray_symbols_16qam[16] = {Complex(-3, -3) / sqrt(10),  // 0
                                         Complex(-1, -3) / sqrt(10),  // 1
@@ -24,14 +20,7 @@ const Complex gray_symbols_16qam[16] = {Complex(-3, -3) / sqrt(10),  // 0
                                         Complex(3, 1) / sqrt(10),    // E
                                         Complex(1, 1) / sqrt(10)};   // F
 
-const Information constellation_16qam = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-Field modulate_16qam(const Information& information);
-Information demodulate_16qam(const Field& signal);
-
 Field sech_pulse(const int& nodes_quantity, const double& width);
-Field rrc_filter(const int& samples, const double& roll_off, const int& N);
-double bit_error_rate(const Information& data_tx, const Information& data_rx);
+Field rrc_filter(const double& roll_off, const int& width, const int& osf);
 
 #endif  // MODULATION_H_

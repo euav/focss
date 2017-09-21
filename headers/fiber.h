@@ -10,10 +10,13 @@ class Fiber {
     double alpha;
     double beta2;
     double gamma;
-    double fiber_length;
+    double length;
     double wavelength;
-    double sampling_rate;
+
+    bool uniform_grid;
     int total_steps;
+    double max_ps;
+    double max_step;
 
   public:
     Fiber(const double& center_wavelength);
@@ -23,15 +26,16 @@ class Fiber {
     void setDispersionEngineering(const double& beta2);
     void setNonlinearity(const double& gamma);
     void setFiberLength(const double& length);
-    void setTotalSteps(const double& steps);
-    void setSamplingRate(const double& rate);
+    void setTotalSteps(const int& steps);
+    void setMaximumShiftAndStep(const double& shift, const double& step);
 
     void propagate(Field& field) const;
     void compensateCD(Field& field, const double& times = 1) const;
     void amplify(Field& field) const;
 
   private:
-    Field estimateLinearity(const int& samples) const;
+    void linearStep(Field& field, const double& step) const;
+    void nonlinearStep(Field& field, const double& step) const;
 };
 
 #endif  // FIBER_H_

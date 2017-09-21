@@ -1,43 +1,53 @@
 #include "../headers/lms_equalizer.h"
 
-LmsEqualizer::LmsEqualizer() : trained_flag(false), order(0) {}
+LmsEqualizer::LmsEqualizer() : trained(false), length(0) {}
 
-LmsEqualizer::LmsEqualizer(const int& filter_order)
-    : trained_flag(false), order(filter_order), weights(filter_order, 0) {}
+LmsEqualizer::LmsEqualizer(const int& filter_length)
+    : trained(false), length(filter_length), weights(filter_length, 0) {}
 
-void LmsEqualizer::setFilterOrder(const int& filter_order) {
-    order = filter_order;
-    weights.assign(order, 0);
-    trained_flag = false;
+void LmsEqualizer::setFilterLength(const int& filter_length) {
+    length = filter_length;
+    weights.assign(length, 0);
+    trained = false;
 }
 
 void LmsEqualizer::train(const Field& desired, const Field& actual) {
-    weights.assign(order, 0);
+    weights.assign(length, 0);
 
-    if (desired.size() != actual.size() || actual.size() < order) return;
+    if (desired.size() != actual.size() || actual.size() < length) return;
 
+    mu = 0.16; alpha = 0.004;
     Complex residual, normalization, step;
-    for (int i = order - 1; i < actual.size(); ++i) {
+    for (int i = length - 1; i < actual.size(); ++i) {
         residual = desired[i];
-        for (int j = 0; j < order; ++j)
+        for (int j = 0; j < length; ++j)
             residual -= weights[j] * actual[i - j];
 
         normalization = stability_epsilon;
-        for (int j = 0; j < order; ++j)
+        for (int j = 0; j < length; ++j)
             normalization += norm(actual[i - j]);
 
-        step = residual / normalization;
-        for (int j = 0; j < order; ++j)
+        step = mu / exp(i * alpha) * residual / normalization;
+        for (int j = 0; j < length; ++j)
             weights[j] += step * conj(actual[i - j]);
     }
 
-    trained_flag = true;
+    trained = true;
 }
 
 Field LmsEqualizer::getWeights() const { return weights; }
 
 Field LmsEqualizer::equalize(const Field& original) const {
-    if (!trained_flag || original.size() < order) return original;
+    if (!trained || original.size() < length) return original;
 
-    return convolution(original, weights).chomp(order - 1, 0);
+    Field equalized(original.size(), 0);
+    int cyclic_index;
+    for (int i = 0; i < original.size(); ++i) {
+        for (int j = 0; j < length; ++j) {
+            cyclic_index = (i - j + original.size()) % original.size();
+            equalized[i] += weights[j] * original[cyclic_index];
+        }
+    }
+
+    return equalized;
 }

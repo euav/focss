@@ -41,8 +41,7 @@ void save_transmission(const Field &tx, const Field &rx, std::ostream &os) {
     }
 }
 */
-
-double q2_factor(const Field& tx, const Field& rx) {
+double evm2_factor(const Field& tx, const Field& rx) {
     double numerator = 0;
     double denominator = 0;
 
@@ -52,7 +51,11 @@ double q2_factor(const Field& tx, const Field& rx) {
         denominator += norm(tx[i]);
     }
 
-    return 10 * std::log10(denominator / numerator);
+    return numerator / denominator;
+}
+
+double q2_factor(const Field& tx, const Field& rx) {
+    return 10 * std::log10(1 / evm2_factor(tx, rx));
 }
 
 double dbm_to_watts(const double& power_dbm) {

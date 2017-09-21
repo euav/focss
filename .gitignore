@@ -1,6 +1,7 @@
 /.vscode
 .clang-format
 /results
+/experiment
 /olegs_code
 test.cpp
 
