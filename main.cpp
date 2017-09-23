@@ -23,18 +23,26 @@ const int pulse_width = 1024;         // [1]
 const int oversampling = 16;          // [1]
 const double max_phase_shift = 1e-3;  // [1]
 const double max_forward_step = 1e3;  // [m]
-const int backward_steps = 10;        // [1]
-const int training_length = 100;      // [1]
+const int training_length = 4096;     // [1]
+const int IDEAL = 0;
 
-Field random_16qam_symbols(const int& constellations) {
-    Field symbols(16 * constellations);
-    for (int i = 0; i < constellations; ++i) {
-        for (int j = 0; j < 16; ++j) {
-            symbols[16 * i + j] = gray_symbols_16qam[j];
-        }
-    }
+void lowpass_inplace(Field& field, const double& cutoff_frequency) {
+    double time_domain = field.size() / field.getSamplingRate();
+    int cutoff_index = int(cutoff_frequency * time_domain);
+    std::cout << "+ cutoff: " << cutoff_index << "\n";
+
+    field.fft_inplace();
+    for (int i = cutoff_index + 1; i < field.size() - cutoff_index; ++i)
+        field[i] = 0;
+    field.ifft_inplace();
+}
+
+Field random_16qam_symbols(const int& length) {
+    Field symbols(length);
+    for (int i = 0; i < length; ++i)
+        symbols[i] = gray_symbols_16qam[i % 16];
+
     std::shuffle(symbols.begin(), symbols.end(), std::mt19937(time(0)));
-
     return symbols;
 }
 
@@ -49,22 +57,12 @@ Field modulate_rrc(const Field& symbols, const double& launch_power) {
 }
 
 Field demodulate_rrc(const Field& signal, const int& osf) {
+    Field symbols = signal;
     Field rrc = rrc_filter(rrc_roll_off, pulse_width, osf);
-    Field matched = signal;
-    matched = matched.apply_filter(rrc).downsample(osf);
-    matched *= std::sqrt(1.0 / matched.average_power());
+    symbols = symbols.apply_filter(rrc).downsample(osf);
+    symbols *= std::sqrt(1.0 / symbols.average_power());
 
-    return matched;
-}
-
-void bandpass_inplace(Field& field, const double& cutoff_frequency) {
-    double time_domain = field.size() / field.getSamplingRate();
-    int cutoff_index = 1 + int(cutoff_frequency * time_domain);
-
-    field.fft_inplace();
-    for (int i = cutoff_index; i < field.size() - cutoff_index; ++i)
-        field[i] = 0;
-    field.ifft_inplace();
+    return symbols;
 }
 
 void forward_propagation(Field& signal) {
@@ -108,7 +106,7 @@ void backward_propagation(Field& signal, const int& steps = 0) {
     if (steps > 0)
         fiber.setTotalSteps(steps);
     else
-        fiber.setTotalSteps(backward_steps);
+        fiber.setMaximumShiftAndStep(max_phase_shift, max_forward_step);
 
     for (int i = 0; i < spans; ++i) {
         fiber.amplify(signal);
@@ -116,57 +114,38 @@ void backward_propagation(Field& signal, const int& steps = 0) {
     }
 }
 
-void experiment(const int& constellations,
-                const double& average_power,
-                std::ostream& os) {
-    Field symbols = random_16qam_symbols(constellations);
-    Field signal = modulate_rrc(symbols, dbm_to_watts(average_power));
-    os << average_power << ',';
+void experiment(const int& symbols_length,
+                const double& average_power_dbm,
+                std::ostream& output_stream) {
+    output_stream << average_power_dbm << ',';
 
     // propagation
+    Field symbols = random_16qam_symbols(symbols_length);
+    Field signal = modulate_rrc(symbols, dbm_to_watts(average_power_dbm));
     forward_propagation(signal);
 
-    std::cout << ">> experimenting with dbp step per span" << std::endl;
-    for (int i = 1; i <= 10; ++i) {
+    std::cout << ">> experimenting with dbp" << std::endl;
+    for (int i = 1; i <= 11; ++i) {
         Field dbp_signal = signal;
-        bandpass_inplace(dbp_signal, 0.5 * bandwidth);
-        // dbp_signal = dbp_signal.downsample(8);
-        backward_propagation(dbp_signal, i);
-        dbp_signal = demodulate_rrc(dbp_signal, oversampling);
+        lowpass_inplace(dbp_signal, 0.5 * bandwidth);
+        dbp_signal = dbp_signal.downsample(8);
 
-        Field training_x = symbols.chomp(0, symbols.size() - training_length);
-        Field training_y = dbp_signal.chomp(0, dbp_signal.size() - training_length);
-        LmsEqualizer lms(3);
-        lms.train(training_x, training_y);
-        Field validation_x = symbols.chomp(training_length, 0);
-        Field validation_y = lms.equalize(dbp_signal).chomp(training_length, 0);
+        // sps parameter
+        if (i <= 10)
+            backward_propagation(dbp_signal, i);
+        else
+            backward_propagation(dbp_signal, IDEAL);
 
-        os << q2_factor(validation_x, validation_y) << ',';
-    }
+        dbp_signal = demodulate_rrc(dbp_signal, 2);
 
-    std::cout << ">> experimenting with dbp BPF and PSE drop" << std::endl;
-    {
-        Field dbp_signal = signal;  //.downsample(8);
-        Field bpf_signal = signal;
-        bandpass_inplace(bpf_signal, 0.5 * bandwidth);
-        // bpf_signal = bpf_signal.downsample(8);
-        backward_propagation(dbp_signal, 10);
-        backward_propagation(bpf_signal, 10);
-        dbp_signal = demodulate_rrc(dbp_signal, oversampling);
-        bpf_signal = demodulate_rrc(bpf_signal, oversampling);
+        Field train_x = symbols.chomp(0, symbols_length - training_length);
+        Field train_y = dbp_signal.chomp(0, symbols_length - training_length);
+        PhaseShiftEqualizer pse(720);
+        pse.train(train_x, train_y);
+        Field valid_x = symbols.chomp(training_length, 0);
+        Field valid_y = pse.equalize(dbp_signal).chomp(training_length, 0);
 
-        os << q2_factor(symbols, dbp_signal) << ',';
-        os << q2_factor(symbols, bpf_signal) << ',';
-
-        Field training_x = symbols.chomp(0, symbols.size() - training_length);
-        Field training_y = dbp_signal.chomp(0, dbp_signal.size() - training_length);
-        LmsEqualizer lms(3);
-        lms.train(training_x, training_y);
-        Field validation_x = symbols.chomp(training_length, 0);
-        Field validation_y = lms.equalize(dbp_signal).chomp(training_length, 0);
-
-
-        os << q2_factor(validation_x, validation_y) << ',';
+        output_stream << q2_factor(valid_x, valid_y) << ',';
     }
 
     std::cout << ">> experimenting with lms and pse" << std::endl;
@@ -175,45 +154,37 @@ void experiment(const int& constellations,
         cd_compensation(cd_signal);
         cd_signal = demodulate_rrc(cd_signal, oversampling);
 
-        for (int i = 1; i <= 3; ++i) {
-            Field training_x = symbols.chomp(0, symbols.size() - training_length);
-            Field training_y = cd_signal.chomp(0, cd_signal.size() - training_length);
-            LmsEqualizer lms(i);
-            lms.train(training_x, training_y);
-            Field validation_x = symbols.chomp(training_length, 0);
-            Field validation_y = lms.equalize(cd_signal).chomp(training_length, 0);
-
-            os << q2_factor(validation_x, validation_y) << ',';
-        }
-
-        Field training_x = symbols.chomp(0, symbols.size() - training_length);
-        Field training_y = cd_signal.chomp(0, cd_signal.size() - training_length);
+        Field train_x = symbols.chomp(0, symbols_length - training_length);
+        Field train_y = cd_signal.chomp(0, symbols_length - training_length);
         PhaseShiftEqualizer pse(720);
-        pse.train(training_x, training_y);
-        Field validation_x = symbols.chomp(training_length, 0);
-        Field validation_y = pse.equalize(cd_signal).chomp(training_length, 0);
+        LmsEqualizer lms(3);
 
-        os << q2_factor(validation_x, validation_y) << std::endl;
+        pse.train(train_x, train_y);
+        lms.train(train_x, train_y);
+
+        Field valid_x = symbols.chomp(training_length, 0);
+        Field valid_pse = pse.equalize(cd_signal).chomp(training_length, 0);
+        Field valid_lms = lms.equalize(cd_signal).chomp(training_length, 0);
+
+        output_stream << q2_factor(valid_x, valid_pse) << ',';
+        output_stream << q2_factor(valid_x, valid_lms) << std::endl;
     }
     std::cout << ">> experiment has done" << std::endl;
 }
 
 int main() {
-    /*
     std::ofstream fout("experiment/right.txt");
-    fout << "#AVG(dBm),DBP(1-10),DBP(BPF-PSE),LMS(1-3),PSE\n";
+    fout << "#AVG(dBm),DBP(1-10,ideal),PSE,LMS(3)\n";
     fout.precision(15);
 
-    for (int i = 21; i <= 41; ++i) {
-        double average_power = double(i) / 2.0 - 10.0;
+    for (int i = 31; i <= 40; ++i) {
+        double average_power_dbm = double(i) / 2.0 - 10.0;
         std::cout << "\nstarting experiment at power ";
-        std::cout << average_power << " dBm" << std::endl;
+        std::cout << average_power_dbm << " dBm" << std::endl;
 
-        experiment(256, average_power, fout);
+        experiment(16384, average_power_dbm, fout);
     }
     fout.close();
-    */
 
-    experiment(64, -2, std::cout);
     return 0;
 }
