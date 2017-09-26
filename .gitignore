@@ -1,10 +1,8 @@
 /.vscode
-.clang-format
 /results
-/experiment
+/executables
 /olegs_code
-test.cpp
-
+.clang-format
 
 # Prerequisites
 *.d
