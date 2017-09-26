@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include "headers/photonics.h"
+#include "photonics.h"
 
 // reference units [m], [s], [W]
 const double attenuation = 2e-4;        // [dB/m]
@@ -82,7 +82,7 @@ void final_experiment(const int& symbols_length,
 
         Field train_x = symbols.chomp(0, symbols_length - training_length);
         Field train_y = dbp_signal.chomp(0, symbols_length - training_length);
-        PhaseShiftEqualizer pse(360);
+        IdealPhaseRecovery pse(360);
         pse.train(train_x, train_y);
         Field valid_x = symbols.chomp(training_length, 0);
         Field valid_y = pse.equalize(dbp_signal).chomp(training_length, 0);
@@ -102,8 +102,8 @@ void final_experiment(const int& symbols_length,
 
         Field train_x = symbols.chomp(0, symbols_length - training_length);
         Field train_y = cd_signal.chomp(0, symbols_length - training_length);
-        PhaseShiftEqualizer pse(360);
-        LmsEqualizer lms(3);
+        IdealPhaseRecovery pse(360);
+        LeastMeanSquare lms(3);
 
         pse.train(train_x, train_y);
         lms.train(train_x, train_y);

@@ -4,13 +4,13 @@
 #include "field.h"
 #include "utility.h"
 
-class PhaseShiftEqualizer {
+class IdealPhaseRecovery {
     int steps;
     double estimated_angle;
 
   public:
-    PhaseShiftEqualizer();
-    PhaseShiftEqualizer(const int& angle_steps);
+    IdealPhaseRecovery();
+    IdealPhaseRecovery(const int& angle_steps);
     void setAngleSteps(const int& angle_steps);
 
     void train(const Field& desired, const Field& actual);

@@ -1,4 +1,4 @@
-#include "../headers/edfa.h"
+#include "amplifier/edfa.h"
 
 EDFA::EDFA(const double& gain, Scale scale) {
     if (scale == LINEAR)

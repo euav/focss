@@ -1,5 +1,4 @@
-#include "../headers/ssfm.h"
-#include <iostream>
+#include "ssfm.h"
 
 SSFM::SSFM() {}
 

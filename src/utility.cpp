@@ -1,4 +1,4 @@
-#include "../headers/utility.h"
+#include "utility.h"
 
 void relax_max(double& a, const double& b) {
     if (a < b) a = b;

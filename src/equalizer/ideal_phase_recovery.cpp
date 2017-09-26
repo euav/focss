@@ -1,16 +1,16 @@
-#include "../headers/phase_shift_equalizer.h"
+#include "equalizer/ideal_phase_recovery.h"
 
-PhaseShiftEqualizer::PhaseShiftEqualizer()
+IdealPhaseRecovery::IdealPhaseRecovery()
     : steps(360), estimated_angle(0) {}
 
-PhaseShiftEqualizer::PhaseShiftEqualizer(const int& angle_steps)
+IdealPhaseRecovery::IdealPhaseRecovery(const int& angle_steps)
     : steps(angle_steps), estimated_angle(0) {}
 
-void PhaseShiftEqualizer::setAngleSteps(const int& angle_steps) {
+void IdealPhaseRecovery::setAngleSteps(const int& angle_steps) {
     steps = angle_steps;
 }
 
-void PhaseShiftEqualizer::train(const Field& desired, const Field& actual) {
+void IdealPhaseRecovery::train(const Field& desired, const Field& actual) {
     double angle, q2;
     double argmax_angle = 0;
     double max_q2 = q2_factor(desired, actual);
@@ -27,8 +27,8 @@ void PhaseShiftEqualizer::train(const Field& desired, const Field& actual) {
     estimated_angle = argmax_angle;
 }
 
-double PhaseShiftEqualizer::getAngle() const { return estimated_angle; }
+double IdealPhaseRecovery::getAngle() const { return estimated_angle; }
 
-Field PhaseShiftEqualizer::equalize(const Field& original) const {
+Field IdealPhaseRecovery::equalize(const Field& original) const {
     return original * i_exp(estimated_angle);
 }

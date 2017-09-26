@@ -1,4 +1,4 @@
-#include "../headers/fiber.h"
+#include "fiber.h"
 
 Fiber Fiber::linear() const {
     Fiber new_fiber = *this;

@@ -1,4 +1,4 @@
-#include "../headers/field.h"
+#include "field.h"
 
 double Field::peak_power() const {
     double power = 0;

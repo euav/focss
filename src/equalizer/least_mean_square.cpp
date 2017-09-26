@@ -1,17 +1,17 @@
-#include "../headers/lms_equalizer.h"
+#include "equalizer/least_mean_square.h"
 
-LmsEqualizer::LmsEqualizer() : trained(false), length(0) {}
+LeastMeanSquare::LeastMeanSquare() : trained(false), length(0) {}
 
-LmsEqualizer::LmsEqualizer(const unsigned long& filter_length)
+LeastMeanSquare::LeastMeanSquare(const unsigned long& filter_length)
     : trained(false), length(filter_length), weights(filter_length, 0) {}
 
-void LmsEqualizer::setFilterLength(const unsigned long& filter_length) {
+void LeastMeanSquare::setFilterLength(const unsigned long& filter_length) {
     length = filter_length;
     weights.assign(length, 0);
     trained = false;
 }
 
-void LmsEqualizer::train(const Field& desired, const Field& actual) {
+void LeastMeanSquare::train(const Field& desired, const Field& actual) {
     weights.assign(length, 0);
 
     if (desired.size() != actual.size() || actual.size() < length) return;
@@ -35,9 +35,9 @@ void LmsEqualizer::train(const Field& desired, const Field& actual) {
     trained = true;
 }
 
-Field LmsEqualizer::getWeights() const { return weights; }
+Field LeastMeanSquare::getWeights() const { return weights; }
 
-Field LmsEqualizer::equalize(const Field& original) const {
+Field LeastMeanSquare::equalize(const Field& original) const {
     if (!trained || original.size() < length) return original;
 
     Field equalized(original.size(), 0);
