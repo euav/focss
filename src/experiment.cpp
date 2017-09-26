@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include "photonics.h"
+#include "focss/focss.h"
 
 // reference units [m], [s], [W]
 const double attenuation = 2e-4;        // [dB/m]

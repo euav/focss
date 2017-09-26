@@ -1,4 +1,4 @@
-#include "equalizer/least_mean_square.h"
+#include "focss/equalizer/least_mean_square.h"
 
 LeastMeanSquare::LeastMeanSquare() : trained(false), length(0) {}
 

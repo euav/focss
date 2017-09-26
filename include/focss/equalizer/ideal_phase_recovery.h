@@ -1,8 +1,8 @@
 #ifndef PHASE_SHIFT_EQUALIZER_H_
 #define PHASE_SHIFT_EQUALIZER_H_
 
-#include "field.h"
-#include "utility.h"
+#include "focss/field.h"
+#include "focss/utility.h"
 
 class IdealPhaseRecovery {
     int steps;

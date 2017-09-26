@@ -4,7 +4,7 @@
 #include <cmath>
 #include <complex>
 #include <random>
-#include "field.h"
+#include "focss/field.h"
 
 const double pi = 3.141592653589793;
 const double planck = 6.62607004081e-34;

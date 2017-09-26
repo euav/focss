@@ -1,9 +1,9 @@
 #ifndef SSFM_H_
 #define SSFM_H_
 
-#include "fiber.h"
-#include "field.h"
-#include "utility.h"
+#include "focss/field.h"
+#include "focss/component/fiber.h"
+#include "focss/utility.h"
 
 class SSFM {
     Fiber fiber;

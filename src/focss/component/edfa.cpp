@@ -1,4 +1,4 @@
-#include "amplifier/edfa.h"
+#include "focss/component/edfa.h"
 
 EDFA::EDFA(const double& gain, Scale scale) {
     if (scale == LINEAR)

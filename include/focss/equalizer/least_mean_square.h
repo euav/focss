@@ -1,8 +1,8 @@
 #ifndef LMS_EQUALIZER_H_
 #define LMS_EQUALIZER_H_
 
-#include "field.h"
-#include "utility.h"
+#include "focss/field.h"
+#include "focss/utility.h"
 
 const double stability_epsilon = 2.2204460492503131e-016;
 

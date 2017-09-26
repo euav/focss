@@ -2,8 +2,8 @@
 #define EDFA_H_
 
 #include <random>
-#include "field.h"
-#include "utility.h"
+#include "focss/field.h"
+#include "focss/utility.h"
 
 struct EDFA {
     double gain = 1;

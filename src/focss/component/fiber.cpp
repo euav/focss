@@ -1,4 +1,4 @@
-#include "fiber.h"
+#include "focss/component/fiber.h"
 
 Fiber Fiber::linear() const {
     Fiber new_fiber = *this;

@@ -1,4 +1,4 @@
-#include "field.h"
+#include "focss/field.h"
 
 double Field::peak_power() const {
     double power = 0;

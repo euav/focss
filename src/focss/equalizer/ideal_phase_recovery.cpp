@@ -1,4 +1,4 @@
-#include "equalizer/ideal_phase_recovery.h"
+#include "focss/equalizer/ideal_phase_recovery.h"
 
 IdealPhaseRecovery::IdealPhaseRecovery()
     : steps(360), estimated_angle(0) {}

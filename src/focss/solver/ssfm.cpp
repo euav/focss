@@ -1,4 +1,4 @@
-#include "ssfm.h"
+#include "focss/solver/ssfm.h"
 
 SSFM::SSFM() {}
 

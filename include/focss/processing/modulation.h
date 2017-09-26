@@ -2,7 +2,7 @@
 #define MODULATION_H_
 
 #include <random>
-#include "field.h"
+#include "focss/field.h"
 
 const double rrc_roll_off = 0.01;
 const Complex gray_symbols_16qam[16] = {Complex(-3, -3) / sqrt(10),  // 0
