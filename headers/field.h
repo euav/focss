@@ -24,9 +24,10 @@ class Field : public ComplexVector {
     double peak_power() const;
     double average_power() const;
 
-    Field upsample(const int& factor) const;
-    Field downsample(const int& factor) const;
+    Field upsample(const unsigned long& factor) const;
+    Field downsample(const unsigned long& factor) const;
     Field chomp(const int& at_begin, const int& at_end) const;
+    Field decimate(const unsigned long& factor) const;
 
     Field operator*(const Complex& multiplier) const;
     Field operator*(const Field& multipliers) const;
@@ -35,11 +36,16 @@ class Field : public ComplexVector {
 
     void setSampligRate(const double& rate);
     double getSamplingRate() const;
-    double f(const int& i) const;
-    double w(const int& i) const;
+    double dt() const;
+    double df() const;
+    double dw() const;
+    double f(const unsigned long& i) const;
+    double w(const unsigned long& i) const;
     RealVector temporal_power() const;
     RealVector spectral_power() const;
 
+    Field fft() const;
+    Field ifft() const;
     Field& fft_inplace();
     Field& ifft_inplace();
     Field& fft_shift();

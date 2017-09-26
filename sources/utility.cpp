@@ -45,8 +45,8 @@ double evm2_factor(const Field& tx, const Field& rx) {
     double numerator = 0;
     double denominator = 0;
 
-    int transmission_size = std::min(tx.size(), rx.size());
-    for (int i = 0; i < transmission_size; ++i) {
+    unsigned long transmission_size = std::min(tx.size(), rx.size());
+    for (unsigned long i = 0; i < transmission_size; ++i) {
         numerator += norm(tx[i] - rx[i]);
         denominator += norm(tx[i]);
     }

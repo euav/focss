@@ -8,7 +8,7 @@ const double stability_epsilon = 2.2204460492503131e-016;
 
 class LmsEqualizer {
     bool trained;
-    int length;
+    unsigned long length;
     Field weights;
 
     double mu;
@@ -16,8 +16,8 @@ class LmsEqualizer {
 
   public:
     LmsEqualizer();
-    LmsEqualizer(const int& filter_length);
-    void setFilterLength(const int& filter_length);
+    LmsEqualizer(const unsigned long& filter_length);
+    void setFilterLength(const unsigned long& filter_length);
     
     void train(const Field& desired, const Field& actual);
     

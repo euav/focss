@@ -26,7 +26,7 @@ void EDFA::amplify(Field& field) const {
 
     std::mt19937 generator(time(0));
     std::normal_distribution<double> awgn(0, std::sqrt(variance / 2));
-    for (int i = 0; i < field.size(); ++i)
+    for (unsigned long i = 0; i < field.size(); ++i)
         field[i] += Complex(awgn(generator), awgn(generator));
 }
 

@@ -1,5 +1,15 @@
 #include "../headers/modulation.h"
-#include "../headers/utility.h"
+
+Field random_16qam_symbols(const unsigned long& length,
+                           const double& baudrate) {
+    Field symbols(length);
+    for (unsigned long i = 0; i < length; ++i)
+        symbols[i] = gray_symbols_16qam[i % 16];
+
+    std::shuffle(symbols.begin(), symbols.end(), std::mt19937(time(0)));
+    symbols.setSampligRate(baudrate);
+    return symbols;
+}
 
 Field sech_pulse(const int& nodes_quantity, const double& width) {
     Field sech_pulse(nodes_quantity, 0);
@@ -14,10 +24,12 @@ Field sech_pulse(const int& nodes_quantity, const double& width) {
     return sech_pulse;
 }
 
-Field rrc_filter(const double& roll_off, const int& width, const int& osf) {
+Field rrc_filter(const double& roll_off,
+                 const unsigned long& width,
+                 const unsigned long& osf) {
     Field filter(width * osf, 0);
 
-    for (int i = 0; i < width * osf; ++i) {
+    for (unsigned long i = 0; i < width * osf; ++i) {
         double t = double(i) / osf - width / 2.0;
 
         if (t == 0) {
@@ -36,4 +48,35 @@ Field rrc_filter(const double& roll_off, const int& width, const int& osf) {
     }
 
     return filter *= 1.0 / filter.peak_power();
+}
+
+Field rrc_modulate(const Field& symbols,
+                   const unsigned long& osf,
+                   const double& power) {
+    Field rrc = rrc_filter(rrc_roll_off, symbols.size(), osf);
+    Field signal = symbols.upsample(osf);
+    signal.apply_filter(rrc);
+    signal *= std::sqrt(power / signal.average_power());
+
+    return signal;
+}
+
+Field rrc_demodulate(const Field& signal, const unsigned long& osf) {
+    Field rrc = rrc_filter(rrc_roll_off, signal.size() / osf, osf);
+    Field symbols = signal;
+    symbols = symbols.apply_filter(rrc).downsample(osf);
+    symbols *= std::sqrt(1.0 / symbols.average_power());
+
+    return symbols;
+}
+
+void lowpass_inplace(Field& field, const double& cutoff_frequency) {
+    double time_domain = field.size() * field.dt();
+    unsigned long cutoff_index = cutoff_frequency * time_domain;
+
+    field.fft_inplace();
+    for (unsigned long i = cutoff_index + 1; i < field.size() - cutoff_index;
+         ++i)
+        field[i] = 0;
+    field.ifft_inplace();
 }
