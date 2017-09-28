@@ -55,7 +55,7 @@ double evm2_factor(const Field& tx, const Field& rx) {
 }
 
 double q2_factor(const Field& tx, const Field& rx) {
-    return 10 * std::log10(1 / evm2_factor(tx, rx));
+    return -10 * std::log10(evm2_factor(tx, rx));
 }
 
 double db_to_linear(const double& db_value) {
@@ -71,7 +71,7 @@ double db_to_natural(const double& db_value) {
 }
 
 double disp_to_beta2(const double& dispersion, const double& wavelength) {
-    return -wavelength * wavelength * dispersion / (2 * pi * light_speed);
+    return -wavelength * wavelength * dispersion / (2 * math_pi * light_speed);
 }
 
 Complex i_exp(const double& x) { return Complex(std::cos(x), std::sin(x)); }

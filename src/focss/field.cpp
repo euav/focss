@@ -39,6 +39,7 @@ Field Field::downsample(const unsigned long& factor) const {
 Field Field::decimate(const unsigned long& factor) const {
     Field lowpassed = this->fft();
     Field downsampled(size() / factor);
+    downsampled.setSampligRate(sampling_rate / factor);
 
     unsigned long cutoff_index = lowpassed.size() / factor / 2;
     unsigned long shift_index = size() - cutoff_index;
@@ -46,7 +47,6 @@ Field Field::decimate(const unsigned long& factor) const {
         downsampled[i] = lowpassed[i];
         downsampled[cutoff_index + i] = lowpassed[shift_index + i];
     }
-    downsampled.setSampligRate(sampling_rate / factor);
     downsampled.ifft_inplace();
 
     return downsampled;
@@ -96,10 +96,10 @@ void Field::setSampligRate(const double& rate) {
     omega.assign(samples, 2 * M_PI * rate / samples);
 
     for (unsigned long i = 0; i <= samples / 2; ++i)
-        omega[i] *= i;
+        omega[i] *= double(i);
 
     for (unsigned long i = samples / 2 + 1; i < samples; ++i) {
-        omega[i] *= i - samples;
+        omega[i] *= double(i) - double(samples);
     }
 }
 

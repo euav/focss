@@ -6,7 +6,7 @@
 #include <random>
 #include "focss/field.h"
 
-const double pi = 3.141592653589793;
+const double math_pi = 3.141592653589793;
 const double planck = 6.62607004081e-34;
 const double light_speed = 299792458;
 
