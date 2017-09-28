@@ -1,5 +1,5 @@
-#ifndef PHASE_SHIFT_EQUALIZER_H_
-#define PHASE_SHIFT_EQUALIZER_H_
+#ifndef IDEAL_PHASE_RECOVERY_H_
+#define IDEAL_PHASE_RECOVERY_H_
 
 #include "focss/field.h"
 #include "focss/utility.h"
@@ -19,4 +19,4 @@ class IdealPhaseRecovery {
     Field equalize(const Field& original) const;
 };
 
-#endif  // PHASE_SHIFT_EQUALIZER_H_
+#endif  // IDEAL_PHASE_RECOVERY_H_
