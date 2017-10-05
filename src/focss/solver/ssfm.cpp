@@ -4,8 +4,8 @@ SSFM::SSFM() {}
 
 SSFM::SSFM(const Fiber& fiber) : fiber(fiber) {}
 
-void SSFM::setFiber(const Fiber& fiber) {
-    this->fiber = fiber;
+void SSFM::setFiber(const Fiber& new_fiber) {
+    fiber = new_fiber;
 }
 
 void SSFM::setTotalSteps(const int& steps) {
