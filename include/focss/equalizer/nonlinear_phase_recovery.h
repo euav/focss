@@ -7,13 +7,10 @@
 
 class NonlinearPhaseRecovery {
     bool trained;
-    unsigned long radius;
-    RealVector weights;
+    double a, b;
 
   public:
     NonlinearPhaseRecovery();
-    NonlinearPhaseRecovery(const unsigned long& symbol_radius);
-    void setSymbolRadius(const unsigned long& symbol_radius);
     
     void train(const Field& desired, const Field& actual);
     
