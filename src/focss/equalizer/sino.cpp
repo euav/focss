@@ -1,5 +1,4 @@
 #include "focss/equalizer/sino.h"
-#include <iostream>
 #include "lasso_admm.h"
 #include <armadillo>
 
@@ -76,12 +75,12 @@ ComplexVector SINO::getWeights() const {
 
 Field SINO::equalize(const Field& original) const {
     if (!trained || original.size() < 4 * radius + 1) return original;
-    unsigned long size = (2 * radius + 1) * (2 * radius + 1);
+    unsigned long n_features = (2 * radius + 1) * (2 * radius + 1);
 
     Field equalized(original.size());
     for (unsigned long i = 2 * radius; i < original.size() - 2 * radius; ++i) {
-        equalized[i] = weights[size] * original[i];
-        for (unsigned long j = 0; j < size; ++j)
+        equalized[i] = weights[n_features] * original[i];
+        for (unsigned long j = 0; j < n_features; ++j)
             equalized[i] += weights[j] * term(original, i, j);
     }
 

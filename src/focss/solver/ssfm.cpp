@@ -24,7 +24,7 @@ void SSFM::linearStep(Field& field, const double& step) const {
 
     field.fft_inplace();
     for (unsigned long i = 0; i < field.size(); ++i)
-        field[i] *= i_exp(-0.5 * fiber.beta2 * field.w(i) * field.w(i) * step);
+        field[i] *= i_exp(0.5 * fiber.beta2 * field.w(i) * field.w(i) * step);
     field.ifft_inplace();
 }
 
