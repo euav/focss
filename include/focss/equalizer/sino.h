@@ -5,19 +5,23 @@
 #include "focss/utility.h"
 
 class SINO {
-    bool trained;
     unsigned long radius;
-    Complex scalar_weight;
-    Field weights;
+    double lambda;
+    bool trained;
+
+    Complex intercept;
+    ComplexVector weights;
 
   public:
     SINO();
     SINO(const unsigned long& symbol_radius);
+    SINO(const unsigned long& symbol_radius, const double& parameter);
     void setSymbolRadius(const unsigned long& symbol_radius);
+    void setRegularizationParameter(const double& parameter);
 
     void train(const Field& desired, const Field& actual);
 
-    Field getWeights() const;
+    ComplexVector getWeights() const;
     Field equalize(const Field& original) const;
 
   private:
