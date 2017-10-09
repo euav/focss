@@ -12,8 +12,8 @@ typedef std::vector<double> RealVector;
 const Complex i_unit = Complex(0, 1);
 
 class Field : public ComplexVector {
-  double sampling_rate;
-  RealVector omega;
+    double sampling_rate;
+    RealVector omega;
 
   public:
     using ComplexVector::vector;
@@ -50,6 +50,15 @@ class Field : public ComplexVector {
     Field& ifft_inplace();
     Field& fft_shift();
     Field& apply_filter(const Field& filter);
+};
+
+struct Polarizations {
+    Field x, y;
+
+    Polarizations operator*(const Complex& multiplier) const;
+    Polarizations operator*(const Field& multipliers) const;
+    Polarizations& operator*=(const Complex& multiplier);
+    Polarizations& operator*=(const Field& multipliers);
 };
 
 Field convolution(const Field& x, const Field& y);

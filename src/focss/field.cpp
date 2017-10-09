@@ -213,6 +213,28 @@ Field& Field::apply_filter(const Field& filter) {
     return ifft_inplace();
 }
 
+Polarizations Polarizations::operator*(const Complex& multiplier) const {
+    return Polarizations{x * multiplier, y * multiplier};
+}
+
+Polarizations Polarizations::operator*(const Field& multipliers) const {
+    return Polarizations{x * multipliers, y * multipliers};
+}
+
+Polarizations& Polarizations::operator*=(const Complex& multiplier) {
+    x *= multiplier;
+    y *= multiplier;
+
+    return *this;
+}
+
+Polarizations& Polarizations::operator*=(const Field& multipliers) {
+    x *= multipliers;
+    y *= multipliers;
+
+    return *this;
+}
+
 Field convolution(const Field& x, const Field& y) {
     Field z(x.size() + y.size() - 1);
     for (unsigned long i = 0; i < x.size(); ++i)
