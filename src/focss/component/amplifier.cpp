@@ -1,13 +1,15 @@
-#include "focss/component/edfa.h"
+#include "amplifier.h"
 
-EDFA::EDFA(const double& gain, Scale scale) {
+Amplifier::Amplifier() : gain(1), noise_factor(0) {}
+
+Amplifier::Amplifier(const double& gain, Scale scale) {
     if (scale == LINEAR)
         this->gain = gain;
     else
         this->gain = db_to_linear(gain);
 }
 
-EDFA::EDFA(const double& gain, const double& noise_factor, Scale scale) {
+Amplifier::Amplifier(const double& gain, const double& noise_factor, Scale scale) {
     if (scale == LINEAR) {
         this->gain = gain;
         this->noise_factor = noise_factor;
@@ -17,7 +19,7 @@ EDFA::EDFA(const double& gain, const double& noise_factor, Scale scale) {
     }
 }
 
-void EDFA::amplify(Field& field) const {
+void Amplifier::amplify(Field& field) const {
     field *= std::sqrt(gain);
 
     double variance = 0.5 * noise_factor * (gain - 1);
@@ -30,4 +32,6 @@ void EDFA::amplify(Field& field) const {
         field[i] += Complex(awgn(generator), awgn(generator));
 }
 
-void EDFA::drop_power(Field& field) const { field *= std::sqrt(1 / gain); }
+void Amplifier::give_gain(Field& field) const { field *= std::sqrt(gain); }
+
+void Amplifier::drop_power(Field& field) const { field *= std::sqrt(1 / gain); }
