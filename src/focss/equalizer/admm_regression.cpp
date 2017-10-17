@@ -1,6 +1,6 @@
 #include "lasso_admm.h"
-#include "focss/utility.h"
 #include <iostream>
+#include "focss/utility.h"
 
 arma::cx_vec cx_soft_threshold(const arma::cx_vec& values,
                                const double& threshold) {
@@ -26,7 +26,7 @@ arma::cx_vec cx_lasso_admm(const arma::cx_mat& A,
     unsigned long MAX_ITERATIONS = 1000;
     double ABSTOL = 1e-6;
     double RELTOL = 1e-6;
-    double rho = 1;
+    double rho = 100;
     double eps_primal;
     double eps_dual;
 
@@ -44,8 +44,6 @@ arma::cx_vec cx_lasso_admm(const arma::cx_mat& A,
 
     unsigned long iteration = 0;
     while (iteration++ < MAX_ITERATIONS) {
-        std::cout << "\r    * iteration " << iteration << std::flush;
-
         u = u + x - z;
         x = solve(Uh, Atb + rho * (z - u), solve_opts::fast);
         x = solve(U, x, solve_opts::fast);
