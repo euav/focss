@@ -5,6 +5,8 @@
 #include <cmath>
 #include <complex>
 #include <vector>
+#include <string>
+#include <stdexcept>
 
 typedef std::complex<double> Complex;
 typedef std::vector<Complex> ComplexVector;
@@ -26,9 +28,15 @@ class Field : public ComplexVector {
 
     Field upsample(const unsigned long& factor) const;
     Field downsample(const unsigned long& factor) const;
-    Field chomp(const int& at_begin, const int& at_end) const;
+    Field chomp(const unsigned long& at_begin,
+                const unsigned long& at_end) const;
     Field decimate(const unsigned long& factor) const;
 
+    Field operator+(const Complex& summand) const;
+    Field operator+(const Field& summands) const;
+    Field& operator+=(const Complex& summand);
+    Field& operator+=(const Field& summands);
+    
     Field operator*(const Complex& multiplier) const;
     Field operator*(const Field& multipliers) const;
     Field& operator*=(const Complex& multiplier);

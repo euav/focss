@@ -1,4 +1,4 @@
-#include "focss/field.h"
+#include "field.h"
 
 double Field::peak_power() const {
     double power = 0;
@@ -52,13 +52,47 @@ Field Field::decimate(const unsigned long& factor) const {
     return downsampled;
 }
 
-Field Field::chomp(const int& at_begin, const int& at_end) const {
+Field Field::chomp(const unsigned long& at_begin,
+                   const unsigned long& at_end) const {
     Field chomped(size() - at_begin - at_end);
     for (unsigned long i = 0; i < chomped.size(); ++i) {
         chomped[i] = at(i + at_begin);
     }
 
     return chomped;
+}
+
+Field Field::operator+(const Complex& summand) const {
+    Field copy(*this);
+    for (unsigned long i = 0; i < copy.size(); ++i)
+        copy[i] += summand;
+    return copy;
+}
+
+Field Field::operator+(const Field& summands) const {
+    Field copy(*this);
+    if (size() == summands.size())
+        for (unsigned long i = 0; i < copy.size(); ++i)
+            copy[i] += summands[i];
+    else
+        throw std::logic_error("fields size mismatch");
+
+    return copy;
+}
+
+Field& Field::operator+=(const Complex& summand) {
+    for (unsigned long i = 0; i < size(); ++i)
+        at(i) += summand;
+    return *this;
+}
+
+Field& Field::operator+=(const Field& summands) {
+    if (size() == summands.size())
+        for (unsigned long i = 0; i < size(); ++i)
+            at(i) += summands[i];
+    else
+        throw std::logic_error("fields size mismatch");
+    return *this;
 }
 
 Field Field::operator*(const Complex& multiplier) const {
@@ -73,6 +107,8 @@ Field Field::operator*(const Field& multipliers) const {
     if (size() == multipliers.size())
         for (unsigned long i = 0; i < copy.size(); ++i)
             copy[i] *= multipliers[i];
+    else
+        throw std::logic_error("fields size mismatch");
 
     return copy;
 }
@@ -87,6 +123,9 @@ Field& Field::operator*=(const Field& multipliers) {
     if (size() == multipliers.size())
         for (unsigned long i = 0; i < size(); ++i)
             at(i) *= multipliers[i];
+    else
+        throw std::logic_error("fields size mismatch");
+
     return *this;
 }
 
