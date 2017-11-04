@@ -1,5 +1,4 @@
-#include "lasso_admm.h"
-#include <iostream>
+#include "admm_regression.h"
 #include "focss/utility.h"
 
 arma::cx_vec cx_soft_threshold(const arma::cx_vec& values,
@@ -26,7 +25,7 @@ arma::cx_vec cx_lasso_admm(const arma::cx_mat& A,
     unsigned long MAX_ITERATIONS = 1000;
     double ABSTOL = 1e-6;
     double RELTOL = 1e-6;
-    double rho = 100;
+    double rho = 25;
     double eps_primal;
     double eps_dual;
 
@@ -50,11 +49,46 @@ arma::cx_vec cx_lasso_admm(const arma::cx_mat& A,
         z_prev = z;
         z = cx_soft_threshold(x + u, lambda / rho);
 
-        eps_primal = ABSTOL * sqrt(dim) + RELTOL * std::max(norm(x), norm(z));
-        eps_dual = ABSTOL * sqrt(dim) + RELTOL * rho * norm(u);
+        eps_primal = std::min(ABSTOL * sqrt(dim), RELTOL * std::max(norm(x), norm(z)));
+        eps_dual = std::min(ABSTOL * sqrt(dim), RELTOL * rho * norm(u));
         if (norm(z - x) < eps_primal && norm(z - z_prev) < eps_dual) break;
     }
-    std::cout << std::endl;
+
+    return z;
+}
+
+arma::cx_vec cx_lad_admm(const arma::cx_mat& A, const arma::cx_vec& b) {
+    using namespace arma;
+
+    unsigned long MAX_ITERATIONS = 1000;
+    double ABSTOL = 1e-6;
+    double RELTOL = 1e-6;
+    double rho = 100;
+    double eps_primal;
+    double eps_dual;
+
+    unsigned long rows = A.n_rows;
+    unsigned long cols = A.n_cols;
+
+    cx_mat Ah = A.t();
+    cx_mat AhA = A.t() * A + 1e-10;
+
+    cx_vec u(rows, fill::zeros);
+    cx_vec x(cols, fill::zeros);
+    cx_vec z(rows, fill::zeros);
+    cx_vec z_prev(rows, fill::zeros);
+
+    unsigned long iteration = 0;
+    while (iteration++ < MAX_ITERATIONS) {
+        u = u + A * x - z - b;
+        x = solve(AhA, Ah * (b + z - u), solve_opts::fast);
+        z_prev = z;
+        z = cx_soft_threshold(A * x - b + u, 1 / rho);
+
+        eps_primal = ABSTOL * sqrt(rows) + RELTOL * std::max(norm(A * x), std::max(norm(z), norm(b)));
+        eps_dual = ABSTOL * sqrt(cols) + RELTOL * rho * norm(Ah * u);
+        if (norm(A * x - z - b) < eps_primal && rho * norm(Ah * (z - z_prev)) < eps_dual) break;
+    }
 
     return z;
 }
