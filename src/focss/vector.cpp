@@ -1,5 +1,4 @@
 #include "vector.h"
-#include <cassert>
 
 namespace focss {
 // ----------------------------------------------------------------------
@@ -149,7 +148,8 @@ Vector<Scalar> Vector<Scalar>::operator*(const Scalar& multiplier) const {
 }
 
 template <typename Scalar>
-Vector<Scalar> Vector<Scalar>::operator*(const Vector<Scalar>& multipliers) const {
+Vector<Scalar> Vector<Scalar>::operator*(
+    const Vector<Scalar>& multipliers) const {
     return Vector(*this) *= multipliers;
 }
 
@@ -160,7 +160,7 @@ template <typename Scalar>
 Vector<Scalar>& Vector<Scalar>::operator+=(const Scalar& summand) {
     for (int i = 0; i < size_; ++i)
         data_[i] += summand;
-    http://www.cpo
+
     return *this;
 }
 
@@ -211,7 +211,8 @@ Vector<Scalar> Vector<Scalar>::operator-(const Scalar& subtrahend) const {
 }
 
 template <typename Scalar>
-Vector<Scalar> Vector<Scalar>::operator-(const Vector<Scalar>& subtrahends) const {
+Vector<Scalar> Vector<Scalar>::operator-(
+    const Vector<Scalar>& subtrahends) const {
     return Vector(*this) -= subtrahends;
 }
 
@@ -237,7 +238,8 @@ Vector<Scalar> Vector<Scalar>::sub(const int& begin, const int& end) const {
 }
 
 template <typename Scalar>
-Vector<Scalar> Vector<Scalar>::chomp(const int& at_begin, const int& at_end) const {
+Vector<Scalar> Vector<Scalar>::chomp(const int& at_begin,
+                                     const int& at_end) const {
     return sub(at_begin, size_ - at_end);
 }
 
