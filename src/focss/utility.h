@@ -1,14 +1,10 @@
-#ifndef UTILITY_H_
-#define UTILITY_H_
+#ifndef FOCSS_UTILITY_H_
+#define FOCSS_UTILITY_H_
 
 #include <cmath>
 #include <complex>
 #include <random>
 #include "focss/field.h"
-
-const double math_pi = 3.141592653589793;
-const double planck = 6.62607004081e-34;
-const double light_speed = 299792458;
 
 void relax_max(double& a, const double& b);
 void relax_mix(double& a, const double& b);
@@ -24,4 +20,4 @@ double disp_to_beta2(const double& dispersion, const double& wavelength);
 
 Complex i_exp(const double& x);
 
-#endif  // UTILITY_H_
+#endif  // FOCSS_UTILITY_H_

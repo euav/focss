@@ -13,34 +13,6 @@ double sinc(const double& x) {
     return std::sin(M_PI * x) / M_PI / x;
 }
 
-/*
-void save_complex(const Complex &number, std::ostream &os) {
-    os << number.real();
-    if (number.imag() > 0) os << "+";
-    os << number.imag();
-    os << "j";
-}
-
-void save_transmission(const Field &tx, const Field &rx, std::ostream &os) {
-    int transmission_size = std::min(tx.size(), rx.size());
-    if (transmission_size > 0) {
-        os << "id,";
-        os << "transmitted_real,transmitted_imag,";
-        os << "received_real,received_imag\n";
-        os << "1,";
-        save_complex(tx[0], os);
-        os << ",";
-        save_complex(rx[0], os);
-    }
-
-    for (int i = 1; i < transmission_size; ++i) {
-        os << "\n" << i + 1 << ",";
-        save_complex(tx[i], os);
-        os << ",";
-        save_complex(rx[i], os);
-    }
-}
-*/
 double evm2_factor(const Field& tx, const Field& rx) {
     double numerator = 0;
     double denominator = 0;
