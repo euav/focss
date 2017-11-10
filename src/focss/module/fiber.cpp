@@ -1,5 +1,6 @@
-#include "focss/component/fiber.h"
+#include "fiber.h"
 
+namespace focss {
 Fiber Fiber::linear() const {
     Fiber new_fiber = *this;
     new_fiber.gamma = 0;
@@ -42,3 +43,4 @@ Fiber Fiber::operator*(const double& length_factor) const {
 
     return new_fiber;
 }
+}  // namespace focss
