@@ -16,10 +16,8 @@ class Vector {
     // ------------------------------------------------------------
     inline Vector() : size_(0), data_(nullptr), proxy_instance_(false) {}
 
-    inline explicit Vector(const int& size) : Vector(size, 0) {}
-
-    inline explicit Vector(const int& size, const Scalar& fill_value) {
-        assert(size > 0);
+    inline explicit Vector(const int& size, const Scalar& fill_value = 0) {
+        assert(size >= 0);
 
         size_ = size;
         data_ = new Scalar[size_];
@@ -32,34 +30,24 @@ class Vector {
         size_ = other.size_;
         data_ = new Scalar[size_];
         proxy_instance_ = false;
-
         for (int i = 0; i < size_; ++i)
             data_[i] = other.data_[i];
     }
 
     inline Vector(Vector&& other) {
-        if (other.proxy_instance_) {
-            size_ = other.size_;
-            data_ = new Scalar[size_];
-            proxy_instance_ = false;
+        size_ = other.size_;
+        data_ = other.data_;
+        proxy_instance_ = other.proxy_instance_;
 
-            for (int i = 0; i < size_; ++i)
-                data_[i] = other.data_[i];
-        } else {
-            size_ = other.size_;
-            data_ = other.data_;
-            proxy_instance_ = false;
-
-            other.size_ = 0;
-            other.data_ = nullptr;
-        }
+        other.size_ = 0;
+        other.data_ = nullptr;
     }
 
     inline Vector& operator=(const Vector& other) {
         if (this != &other) {
-            if (proxy_instance_) assert(size_ == other.size_);
+            if (size_ != other.size_) {
+                assert(proxy_instance_);
 
-            if (size_ != other.size__) {
                 delete[] data_;
                 size_ = other.size_;
                 data_ = new Scalar[size_];
@@ -75,33 +63,23 @@ class Vector {
     inline Vector& operator=(Vector&& other) {
         if (this != &other) {
             if (proxy_instance_) {
-                assert(size_ == other.size_);
-
-                for (int i = 0; i < size_; ++i)
-                    data_[i] = other.data_[i];
-            } else if (!proxy_instance_ && other.proxy_instance_) {
-                if (size_ != other.size_) {
-                    delete[] data_;
-                    size_ = other.size_;
-                    data_ = new Scalar[size_];
-                }
-
-                for (int i = 0; i < size_; ++i)
-                    data_[i] = other.data_[i];
+                assert(other.proxy_instance_);
             } else {
                 delete[] data_;
-                size_ = other.size_;
-                data_ = other.data_;
-
-                other.size_ = 0;
-                other.data_ = nullptr;
             }
+
+            size_ = other.size_;
+            data_ = other.data_;
+            proxy_instance_ = other.proxy_instance_;
+
+            other.size_ = 0;
+            other.data_ = nullptr;
         }
 
         return *this;
     }
 
-    inline ~Vector() {
+    inline virtual ~Vector() {
         if (!proxy_instance_) delete[] data_;
     }
 
@@ -112,7 +90,7 @@ class Vector {
     inline bool is_proxy() const { return proxy_instance_; }
 
     inline static Vector proxy(const int& size, Scalar* data) {
-        Vector<Scalar> proxy;
+        Vector proxy;
         proxy.size_ = size;
         proxy.data_ = data;
         proxy.proxy_instance_ = true;
@@ -235,7 +213,7 @@ class Vector {
         assert((0 <= index && index < size_));
         return data_[index];
     }
-};
+};  // namespace focss
 }  // namespace focss
 
 #endif  // FOCSS_VECTOR_H_
