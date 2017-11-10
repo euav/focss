@@ -1,22 +1,22 @@
-#ifndef IDEAL_PHASE_RECOVERY_H_
-#define IDEAL_PHASE_RECOVERY_H_
+#ifndef FOCSS_EQUALIZER_PHASE_SHIFT_EQUALIZER_H_
+#define FOCSS_EQUALIZER_PHASE_SHIFT_EQUALIZER_H_
 
-#include "focss/field.h"
-#include "focss/utility.h"
+#include "focss/functions.h"
 
-class IdealPhaseRecovery {
+namespace focss {
+class PhaseShiftEqualizer {
     int steps;
     double estimated_angle;
 
   public:
-    IdealPhaseRecovery();
-    IdealPhaseRecovery(const int& angle_steps);
+    PhaseShiftEqualizer();
+    PhaseShiftEqualizer(const int& angle_steps);
     void setAngleSteps(const int& angle_steps);
 
-    void train(const Field& desired, const Field& actual);
+    void train(const ComplexVector& desired, const ComplexVector& actual);
 
     double getAngle() const;
-    Field equalize(const Field& original) const;
+    ComplexVector equalize(const ComplexVector& original) const;
 };
-
-#endif  // IDEAL_PHASE_RECOVERY_H_
+}  // namespace focss
+#endif  // FOCSS_EQUALIZER_PHASE_SHIFT_EQUALIZER_H_

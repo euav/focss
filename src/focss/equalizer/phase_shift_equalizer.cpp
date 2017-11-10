@@ -1,16 +1,18 @@
-#include "focss/equalizer/ideal_phase_recovery.h"
+#include "phase_shift_equalizer.h"
+#include "focss/functions.h"
 
-IdealPhaseRecovery::IdealPhaseRecovery()
-    : steps(360), estimated_angle(0) {}
+namespace focss {
+PhaseShiftEqualizer::PhaseShiftEqualizer() : steps(360), estimated_angle(0) {}
 
-IdealPhaseRecovery::IdealPhaseRecovery(const int& angle_steps)
+PhaseShiftEqualizer::PhaseShiftEqualizer(const int& angle_steps)
     : steps(angle_steps), estimated_angle(0) {}
 
-void IdealPhaseRecovery::setAngleSteps(const int& angle_steps) {
+void PhaseShiftEqualizer::setAngleSteps(const int& angle_steps) {
     steps = angle_steps;
 }
 
-void IdealPhaseRecovery::train(const Field& desired, const Field& actual) {
+void PhaseShiftEqualizer::train(const ComplexVector& desired,
+                                const ComplexVector& actual) {
     double angle, q2;
     double argmax_angle = 0;
     double max_q2 = q2_factor(desired, actual);
@@ -27,8 +29,10 @@ void IdealPhaseRecovery::train(const Field& desired, const Field& actual) {
     estimated_angle = argmax_angle;
 }
 
-double IdealPhaseRecovery::getAngle() const { return estimated_angle; }
+double PhaseShiftEqualizer::getAngle() const { return estimated_angle; }
 
-Field IdealPhaseRecovery::equalize(const Field& original) const {
+ComplexVector PhaseShiftEqualizer::equalize(
+    const ComplexVector& original) const {
     return original * i_exp(estimated_angle);
 }
+}  // namespace focss
