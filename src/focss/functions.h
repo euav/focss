@@ -1,21 +1,14 @@
 #ifndef FOCSS_FUNCTIONS_H_
 #define FOCSS_FUNCTIONS_H_
 
-#include <complex>
-#include "focss/vector.h"
+#include "focss/core.h"
+#include "focss/field.h"
 
 namespace focss {
-const double math_pi = 3.14159265358979323846264338;  // [1]
-const double planck = 6.62607004081818181818181e-34;  // [m^2 kg / s]
-const double light_speed = 299792458;                 // [m/s]
-
-typedef std::complex<double> Complex;
-typedef Vector<Complex> ComplexVector;
-typedef Vector<double> RealVector;
-const Complex i_unit = Complex(0, 1);
-
 double sinc(const double& x);
 
+double evm2_factor(const Field& tx, const Field& rx);
+double q2_factor(const Field& tx, const Field& rx);
 double evm2_factor(const ComplexVector& tx, const ComplexVector& rx);
 double q2_factor(const ComplexVector& tx, const ComplexVector& rx);
 
@@ -35,6 +28,10 @@ void fft_inplace(ComplexVector* data);
 void ifft_inplace(ComplexVector* data);
 ComplexVector fft(const ComplexVector& data);
 ComplexVector ifft(const ComplexVector& data);
+
+void save_transmission(const ComplexVector& tx,
+                       const ComplexVector& rx,
+                       const char* filename);
 }  // namespace focss
 
 #endif  // FOCSS_FUNCTIONS_H_
