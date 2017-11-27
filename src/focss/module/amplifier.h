@@ -15,7 +15,7 @@ struct Amplifier {
 
   public:
     void amplify(Field& field) const;
-    void give_gain(Field& field) const;
+    void give_power(Field& field) const;
     void drop_power(Field& field) const;
 };
 }  // namespace focss

@@ -26,7 +26,7 @@ void Amplifier::amplify(Field& field) const {
     }
 }
 
-void Amplifier::give_gain(Field& field) const {
+void Amplifier::give_power(Field& field) const {
     if (gain_ > 1)
         field *= std::sqrt(gain_);
     else
