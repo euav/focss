@@ -213,7 +213,7 @@ class Vector {
         assert((0 <= index && index < size_));
         return data_[index];
     }
-};  // namespace focss
+};
 }  // namespace focss
 
 #endif  // FOCSS_VECTOR_H_
