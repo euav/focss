@@ -2,11 +2,12 @@
 #include <cmath>
 #include <random>
 #include "focss/field.h"
+#include "focss/functions.h"
 
 namespace focss {
 Amplifier::Amplifier() : gain_(1), noise_factor_(0) {}
 
-Amplifier::Amplifier(const double& gain) : gain_(gain) {}
+Amplifier::Amplifier(const double& gain) : gain_(gain), noise_factor_(0) {}
 
 Amplifier::Amplifier(const double& gain, const double& noise_factor)
     : gain_(gain), noise_factor_(noise_factor) {}
@@ -16,14 +17,12 @@ void Amplifier::amplify(Field& field) const {
 
     if (noise_factor_ != 0) {
         double variance = focss::planck * field.get_center_frequency();
-        variance *= noise_factor_ * (gain_ - 1) * field.get_sampling_rate(); 
+        variance *= noise_factor_ * (gain_ - 1) * field.get_sampling_rate();
+        variance /= field.modes();
 
-        std::mt19937 generator(time(0));
-        std::normal_distribution<double> awgn(0, std::sqrt(variance / 4));
-        for (int i = 0; i < field.samples(); ++i) {
-            field.x(i) += Complex(awgn(generator), awgn(generator));
-            field.y(i) += Complex(awgn(generator), awgn(generator));
-        }
+        std::normal_distribution<double> awgn(0, std::sqrt(variance / 2));
+        for (int i = 0; i < field.size(); ++i) 
+            field(i) += Complex(awgn(global_urng()), awgn(global_urng()));
     }
 }
 

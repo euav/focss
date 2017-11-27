@@ -7,7 +7,6 @@ namespace focss {
 struct Amplifier {
     double gain_;
     double noise_factor_;
-    double center_wavelength = 1.55e-6;
 
   public:
     Amplifier();
