@@ -16,7 +16,17 @@ class Vector {
     // ------------------------------------------------------------
     inline Vector() : size_(0), data_(nullptr), proxy_instance_(false) {}
 
-    inline explicit Vector(const int& size, const Scalar& fill_value = 0) {
+    inline explicit Vector(const int& size) {
+        assert(size >= 0);
+
+        size_ = size;
+        data_ = new Scalar[size_];
+        proxy_instance_ = false;
+        for (int i = 0; i < size_; ++i)
+            data_[i] = Scalar();
+    }
+
+    inline explicit Vector(const int& size, const Scalar& fill_value) {
         assert(size >= 0);
 
         size_ = size;
@@ -127,6 +137,33 @@ class Vector {
     }
 
     // ------------------------------------------------------------
+    // Vector<Scalar> division
+    // ------------------------------------------------------------
+    inline Vector& operator/=(const Scalar& devisor) {
+        for (int i = 0; i < size_; ++i)
+            data_[i] /= devisor;
+
+        return *this;
+    }
+
+    inline Vector& operator/=(const Vector& devisors) {
+        assert(size_ == devisors.size_);
+
+        for (int i = 0; i < size_; ++i)
+            data_[i] /= devisors.data_[i];
+
+        return *this;
+    }
+
+    inline Vector operator/(const Scalar& devisor) const {
+        return Vector(*this) /= devisor;
+    }
+
+    inline Vector operator/(const Vector& devisors) const {
+        return Vector(*this) /= devisors;
+    }
+
+    // ------------------------------------------------------------
     // Vector<Scalar> addition
     // ------------------------------------------------------------
     inline Vector& operator+=(const Scalar& summand) {
@@ -205,12 +242,12 @@ class Vector {
     inline Scalar* raw() { return data_; }
 
     inline Scalar& operator[](const int& index) {
-        assert((0 <= index && index < size_));
+        assert(0 <= index && index < size_);
         return data_[index];
     }
 
     inline Scalar operator[](const int& index) const {
-        assert((0 <= index && index < size_));
+        assert(0 <= index && index < size_);
         return data_[index];
     }
 };
