@@ -5,8 +5,8 @@
 
 namespace focss {
 struct Amplifier {
-    double gain_;
-    double noise_factor_;
+    double gain;
+    double noise_factor;
 
   public:
     Amplifier();
