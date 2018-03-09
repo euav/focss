@@ -2,26 +2,27 @@
 #define FOCSS_VECTOR_H_
 
 #include <cassert>
+#include <initializer_list>
 
 namespace focss {
 template <typename Scalar>
 class Vector {
     int size_;
     Scalar* data_;
-    bool proxy_instance_;
+    bool owner_;
 
   public:
     // ------------------------------------------------------------
     // Vector<Scalar> constructors and destructor
     // ------------------------------------------------------------
-    inline Vector() : size_(0), data_(nullptr), proxy_instance_(false) {}
+    inline Vector() : size_(0), data_(nullptr), owner_(true) {}
 
     inline explicit Vector(const int& size) {
         assert(size >= 0);
 
         size_ = size;
         data_ = new Scalar[size_];
-        proxy_instance_ = false;
+        owner_ = true;
         for (int i = 0; i < size_; ++i)
             data_[i] = Scalar();
     }
@@ -31,32 +32,51 @@ class Vector {
 
         size_ = size;
         data_ = new Scalar[size_];
-        proxy_instance_ = false;
+        owner_ = true;
         for (int i = 0; i < size_; ++i)
             data_[i] = fill_value;
+    }
+
+    inline Vector(std::initializer_list<Scalar> data_list) {
+        size_ = data_list.size();
+        data_ = new Scalar[size_];
+        owner_ = true;
+
+        auto it = data_list.begin();
+        for (int i = 0; i < size_; ++i)
+            data_[i] = *it++;
     }
 
     inline Vector(const Vector& other) {
         size_ = other.size_;
         data_ = new Scalar[size_];
-        proxy_instance_ = false;
+        owner_ = true;
         for (int i = 0; i < size_; ++i)
             data_[i] = other.data_[i];
     }
 
     inline Vector(Vector&& other) {
-        size_ = other.size_;
-        data_ = other.data_;
-        proxy_instance_ = other.proxy_instance_;
+        if (other.owner_) {
+            size_ = other.size_;
+            data_ = other.data_;
+            owner_ = true;
 
-        other.size_ = 0;
-        other.data_ = nullptr;
+            other.size_ = 0;
+            other.data_ = nullptr;
+        } else {
+            size_ = other.size_;
+            data_ = new Scalar[size_];
+            owner_ = true;
+
+            for (int i = 0; i < size_; ++i)
+                data_[i] = other.data_[i];
+        }
     }
 
     inline Vector& operator=(const Vector& other) {
         if (this != &other) {
             if (size_ != other.size_) {
-                assert(proxy_instance_);
+                assert(owner_);
 
                 delete[] data_;
                 size_ = other.size_;
@@ -72,40 +92,83 @@ class Vector {
 
     inline Vector& operator=(Vector&& other) {
         if (this != &other) {
-            if (proxy_instance_) {
-                assert(other.proxy_instance_);
-            } else {
+            if (owner_ && other.owner_) {
                 delete[] data_;
+
+                size_ = other.size_;
+                data_ = other.data_;
+                owner_ = other.owner_;
+
+                other.size_ = 0;
+                other.data_ = nullptr;
+            } else {
+                if (size_ != other.size_) {
+                    assert(owner_);
+
+                    delete[] data_;
+                    size_ = other.size_;
+                    data_ = new Scalar[size_];
+                }
+
+                for (int i = 0; i < size_; ++i)
+                    data_[i] = other.data_[i];
             }
-
-            size_ = other.size_;
-            data_ = other.data_;
-            proxy_instance_ = other.proxy_instance_;
-
-            other.size_ = 0;
-            other.data_ = nullptr;
         }
 
         return *this;
     }
 
     inline virtual ~Vector() {
-        if (!proxy_instance_) delete[] data_;
+        if (owner_) delete[] data_;
     }
 
   public:
     // ------------------------------------------------------------
-    // Vector<Scalar> proxy handling
+    // Vector<Scalar> weak ownership handling
     // ------------------------------------------------------------
-    inline bool is_proxy() const { return proxy_instance_; }
+    inline bool is_owner() const { return owner_; }
 
     inline static Vector proxy(const int& size, Scalar* data) {
         Vector proxy;
         proxy.size_ = size;
         proxy.data_ = data;
-        proxy.proxy_instance_ = true;
+        proxy.owner_ = false;
 
         return proxy;
+    }
+
+  public:
+    // ------------------------------------------------------------
+    // Vector<Scalar> access methods
+    // ------------------------------------------------------------
+    inline int size() const { return size_; }
+
+    inline Scalar* raw() { return data_; }
+
+    inline Vector sub(const int& begin, const int& end) const {
+        assert(0 <= begin);
+        assert(begin < end);
+        assert(end <= size_);
+
+        Vector<Scalar> subvector(end - begin);
+        for (int i = 0; i < subvector.size_; ++i)
+            subvector.data_[i] = data_[i + begin];
+
+        return subvector;
+    }
+
+    inline Vector chomp(const int& at_begin, const int& at_end) const {
+        return sub(at_begin, size_ - at_end);
+    }
+
+    inline Scalar& operator[](const int& index) {
+        assert(0 <= index && index < size_);
+        return data_[index];
+    }
+
+    inline Scalar operator[](const int& index) const {
+        assert(0 <= index && index < size_);
+        return data_[index];
     }
 
   public:
@@ -215,40 +278,6 @@ class Vector {
 
     inline Vector operator-(const Vector& subtrahends) const {
         return Vector(*this) -= subtrahends;
-    }
-
-  public:
-    // ------------------------------------------------------------
-    // Vector<Scalar> general methods
-    // ------------------------------------------------------------
-    inline int size() const { return size_; }
-
-    inline Vector sub(const int& begin, const int& end) const {
-        assert(0 <= begin);
-        assert(begin < end);
-        assert(end <= size_);
-
-        Vector<Scalar> subvector(end - begin);
-        for (int i = 0; i < subvector.size_; ++i)
-            subvector.data_[i] = data_[i + begin];
-
-        return subvector;
-    }
-
-    inline Vector chomp(const int& at_begin, const int& at_end) const {
-        return sub(at_begin, size_ - at_end);
-    }
-
-    inline Scalar* raw() { return data_; }
-
-    inline Scalar& operator[](const int& index) {
-        assert(0 <= index && index < size_);
-        return data_[index];
-    }
-
-    inline Scalar operator[](const int& index) const {
-        assert(0 <= index && index < size_);
-        return data_[index];
     }
 };
 }  // namespace focss
