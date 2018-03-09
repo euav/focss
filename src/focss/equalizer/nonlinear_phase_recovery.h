@@ -1,21 +1,21 @@
-#ifndef NONLINEAR_PHASE_RECOVERY_H_
-#define NONLINEAR_PHASE_RECOVERY_H_
+#ifndef FOCSS_EQUALIZER_NONLINEAR_PHASE_RECOVERY_H_
+#define FOCSS_EQUALIZER_NONLINEAR_PHASE_RECOVERY_H_
 
 #include "focss/field.h"
-#include "focss/utility.h"
 
-
+namespace focss {
 class NonlinearPhaseRecovery {
-    bool trained;
-    double a, b;
-
   public:
     NonlinearPhaseRecovery();
-    
-    void train(const Field& desired, const Field& actual);
-    
-    RealVector getWeights() const;
-    Field equalize(const Field& original) const;
-};
 
-#endif  // NONLINEAR_PHASE_RECOVERY_H_
+    void train(const Field& desired, const Field& actual);
+    Field equalize(const Field& original) const;
+    RealVector get_weights() const;
+
+  private:
+    bool trained_;
+    double a_, b_;
+};
+}  // namespace focss
+
+#endif  // FOCSS_EQUALIZER_NONLINEAR_PHASE_RECOVERY_H_

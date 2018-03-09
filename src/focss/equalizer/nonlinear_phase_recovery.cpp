@@ -1,59 +1,62 @@
 #include "focss/equalizer/nonlinear_phase_recovery.h"
+#include <algorithm>
+#include "focss/functions.h"
 
-double median(std::vector<double>& numbers) {
-    std::sort(numbers.begin(), numbers.end());
+namespace focss {
+double median(RealVector numbers) {
+    std::sort(numbers.raw(), numbers.raw() + numbers.size());
 
-    unsigned long size = numbers.size();
-    if (size % 2 == 0) 
+    int size = numbers.size();
+    if (size % 2 == 0)
         return 0.5 * (numbers[size / 2] + numbers[size / 2 - 1]);
     else
         return numbers[size / 2];
 }
 
-NonlinearPhaseRecovery::NonlinearPhaseRecovery() : trained(false) {}
+NonlinearPhaseRecovery::NonlinearPhaseRecovery() : trained_(false) {}
 
 void NonlinearPhaseRecovery::train(const Field& desired, const Field& actual) {
     if (desired.size() == actual.size()) {
-        unsigned long size = actual.size();
-        std::vector<double> x(size);
-        std::vector<double> y(size);
-        for (unsigned long i = 0; i < size; ++i) {
+        int size = actual.size();
+        RealVector x(size);
+        RealVector y(size);
+        for (int i = 0; i < size; ++i) {
             x[i] = norm(actual[i]);
             y[i] = arg(desired[i] / actual[i]);
         }
 
-        std::vector<double> slopes;
-        for (unsigned long i = 0; i < size; ++i)
-            for (unsigned long j = i + 1; j < size; ++j)
-                slopes.push_back((y[i] - y[j]) / (x[i] - x[j]));
-        
-        b = median(slopes);
+        int index = 0;
+        RealVector slopes((size * (size - 1)) / 2);
+        for (int j = 0; j < size; ++j)
+            for (int i = 0; i < j; ++i)
+                slopes[(j * (j - 1)) / 2 + i] = (y[i] - y[j]) / (x[i] - x[j]);
 
-        std::vector<double> intercepts(size);
-        for (unsigned long i = 0; i < size; ++i)
-            intercepts[i] = y[i] - b * x[i];
+        b_ = median(slopes);
 
-        a = median(intercepts);
+        RealVector intercepts(size);
+        for (int i = 0; i < size; ++i)
+            intercepts[i] = y[i] - b_ * x[i];
 
-        trained = true;
+        a_ = median(intercepts);
+
+        trained_ = true;
     } else {
-        a = 0;
-        b = 0;
+        a_ = 0;
+        b_ = 0;
 
-        trained = false;
+        trained_ = false;
     }
 }
 
-RealVector NonlinearPhaseRecovery::getWeights() const {
-    return {a, b};
-}
-
 Field NonlinearPhaseRecovery::equalize(const Field& original) const {
-    if (!trained) return original;
+    if (!trained_) return original;
 
     Field equalized = original;
-    for (unsigned long i = 0; i < original.size(); ++i)
-        equalized[i] *= i_exp(a + b * norm(original[i]));
+    for (int index = 0; index < original.size(); ++index)
+        equalized[index] *= i_exp(a_ + b_ * norm(original[index]));
 
     return equalized;
 }
+
+RealVector NonlinearPhaseRecovery::get_weights() const { return {a_, b_}; }
+}  // namespace focss
