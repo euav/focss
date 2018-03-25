@@ -4,10 +4,7 @@
 #include "focss/field.h"
 
 namespace focss {
-struct Amplifier {
-    double gain;
-    double noise_factor;
-
+class Amplifier {
   public:
     Amplifier();
     Amplifier(const double& gain);
@@ -17,6 +14,10 @@ struct Amplifier {
     void amplify(Field& field) const;
     void give_power(Field& field) const;
     void drop_power(Field& field) const;
+
+  private:
+    double gain_;
+    double noise_factor_;
 };
 }  // namespace focss
 
