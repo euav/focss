@@ -12,6 +12,7 @@ class Amplifier {
 
   public:
     void amplify(Field& field) const;
+    void add_noise(Field& field) const;
     void give_power(Field& field) const;
     void drop_power(Field& field) const;
 
