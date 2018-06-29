@@ -1,0 +1,14 @@
+/*!
+ * @dir focss
+ * @brief Namespace @ref focss
+ */
+
+/*!
+* @namespace focss
+* @brief Root namespace
+*/
+
+/*!
+ * @dir equalizer
+ * @brief directory with linear equalizer for optical signal
+ */
