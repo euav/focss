@@ -37,7 +37,7 @@ void SSFM::set_maximum_step_size(const double& maximum_step_size) {
 }
 
 void SSFM::run(Field& field, const Direction& direction) {
-    int freq_step = field.dw();
+    double freq_step = field.dw();
     int cache_size = field.samples();
 
     disp_cache_ = new double[cache_size];
@@ -134,7 +134,7 @@ int SSFM::estimate_logarithmic_steps(const Field& field) const {
 }
 
 double SSFM::estimate_next_adaptive_step(const Field& field) const {
-    double argument = fiber_.kappa * std::abs(fiber_.gamma);
+    double argument = std::abs(fiber_.kappa * fiber_.gamma);
     double phase_shift = argument * field.peak_power();
     return std::min(maximum_step_size_, maximum_phase_shift_ / phase_shift);
 }
@@ -144,34 +144,30 @@ void SSFM::linear_step(Field& field, const double& step) const {
 
     field.fft_inplace();
     double argument = 0.5 * fiber_.beta2 * step;
-    for (int index = 0, mode = 0; mode < field.modes(); ++mode)
-        for (int sample = 0; sample < field.samples(); ++sample, ++index)
-            field[index] *= i_exp(argument * disp_cache_[sample]);
+    for (int index = 0; index < field.size(); ++index)
+        field[index] *= i_exp(argument * disp_cache_[index % field.samples()]);
     field.ifft_inplace();
-}
-
-void SSFM::nonlinear_step(Field& field, const double& step) const {
-    double argument = fiber_.kappa * fiber_.gamma * step;
-    for (int index = 0, mode = 0; mode < field.modes(); ++mode)
-        for (int sample = 0; sample < field.samples(); ++sample, ++index)
-            field[index] *= i_exp(argument * field.power(sample));
 }
 
 void SSFM::nofft_linear_step(Field& field, const double& step) const {
     field *= exp(-0.5 * fiber_.alpha * step);
 
     double argument = 0.5 * fiber_.beta2 * step;
-    for (int index = 0, mode = 0; mode < field.modes(); ++mode)
-        for (int sample = 0; sample < field.samples(); ++sample, ++index)
-            field[index] *= i_exp(argument * disp_cache_[sample]);
+    for (int index = 0; index < field.size(); ++index)
+        field[index] *= i_exp(argument * disp_cache_[index % field.samples()]);
+}
+
+void SSFM::nonlinear_step(Field& field, const double& step) const {
+    double argument = fiber_.kappa * fiber_.gamma * step;
+    for (int index = 0; index < field.size(); ++index)
+        field[index] *= i_exp(argument * field.power(index % field.samples()));
 }
 
 void SSFM::fft_nonlinear_step(Field& field, const double& step) const {
     field.ifft_inplace();
     double argument = fiber_.kappa * fiber_.gamma * step;
-    for (int index = 0, mode = 0; mode < field.modes(); ++mode)
-        for (int sample = 0; sample < field.samples(); ++sample, ++index)
-            field[index] *= i_exp(argument * field.power(sample));
+    for (int index = 0; index < field.size(); ++index)
+        field[index] *= i_exp(argument * field.power(index % field.samples()));
     field.fft_inplace();
 }
 }  // namespace focss
