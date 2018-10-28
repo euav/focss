@@ -38,10 +38,10 @@ class SSFM {
     int estimate_logarithmic_steps(const Field& field) const;
     double estimate_next_adaptive_step(const Field& field) const;
 
-    inline void linear_step(Field& field, const double& step) const;
-    inline void nonlinear_step(Field& field, const double& step) const;
-    inline void nofft_linear_step(Field& field, const double& step) const;
-    inline void fft_nonlinear_step(Field& field, const double& step) const;
+    void linear_step(Field& field, const double& step) const;
+    void nonlinear_step(Field& field, const double& step) const;
+    void nofft_linear_step(Field& field, const double& step) const;
+    void fft_nonlinear_step(Field& field, const double& step) const;
 
   private:
     Fiber fiber_;
