@@ -4,18 +4,24 @@
 #include <cmath>
 #include <fstream>
 #include <random>
-#include "focss/core.h"
+#include "focss/definitions.h"
 #include "focss/field.h"
 
 namespace focss {
-std::default_random_engine& global_urng() {
-    static std::default_random_engine urng;
-    return urng;
+void setup() {
+    // fftw_init_threads();
+    // fftw_plan_with_nthreads(2);
+    focss::reseed_global_urng();
 }
 
 void reseed_global_urng() {
     static std::random_device rdev;
     global_urng().seed(rdev());
+}
+
+std::default_random_engine& global_urng() {
+    static std::default_random_engine urng;
+    return urng;
 }
 
 double evm2_factor(const ComplexVector& tx, const ComplexVector& rx) {
@@ -37,8 +43,8 @@ double evm2_factor(const Field& tx, const Field& rx) {
     double numerator = 0;
     double denominator = 0;
     for (int i = 0; i < tx.size(); ++i) {
-        numerator += norm(tx(i) - rx(i));
-        denominator += norm(tx(i));
+        numerator += norm(tx[i] - rx[i]);
+        denominator += norm(tx[i]);
     }
 
     return numerator / denominator;
@@ -70,6 +76,7 @@ double q2_factor(const Field& tx, const Field& rx) {
 
 double q2_factor(const Field& tx, const Field& rx, const int& cut) {
     return -10 * std::log10(evm2_factor(tx, rx, cut));
+    // return  3.0 / 8.0 * std::erfc(sqrt(0.1 / evm2_factor(tx, rx, cut)));
 }
 
 double db_to_linear(const double& db_value) {
@@ -93,12 +100,12 @@ double sinc(const double& x) {
     return std::sin(math_pi * x) / math_pi / x;
 }
 
-Complex i_exp(const double& x) { return Complex(std::cos(x), std::sin(x)); }
+complex_t i_exp(const double& x) { return complex_t(std::cos(x), std::sin(x)); }
 
 // ----------------------------------------------------------------------
-// -------------------- Complex* fast fourier transform (fft)
+// -------------------- complex_t* fast fourier transform (fft)
 // ----------------------------------------------------------------------
-void fft_inplace(const int& size, Complex* input_output) {
+void fft_inplace(const int& size, complex_t* input_output) {
     fftw_plan complex_inplace =
         fftw_plan_dft_1d(size, reinterpret_cast<fftw_complex*>(input_output),
                          reinterpret_cast<fftw_complex*>(input_output),
@@ -110,7 +117,7 @@ void fft_inplace(const int& size, Complex* input_output) {
         input_output[i] /= size;
 }
 
-void ifft_inplace(const int& size, Complex* input_output) {
+void ifft_inplace(const int& size, complex_t* input_output) {
     fftw_plan complex_inplace =
         fftw_plan_dft_1d(size, reinterpret_cast<fftw_complex*>(input_output),
                          reinterpret_cast<fftw_complex*>(input_output),
@@ -119,7 +126,7 @@ void ifft_inplace(const int& size, Complex* input_output) {
     fftw_destroy_plan(complex_inplace);
 }
 
-void fft(const int& size, Complex* input, Complex* output) {
+void fft(const int& size, complex_t* input, complex_t* output) {
     fftw_plan complex_inplace = fftw_plan_dft_1d(
         size, reinterpret_cast<fftw_complex*>(input),
         reinterpret_cast<fftw_complex*>(output), FFTW_FORWARD, FFTW_ESTIMATE);
@@ -130,7 +137,7 @@ void fft(const int& size, Complex* input, Complex* output) {
         output[i] /= size;
 }
 
-void ifft(const int& size, Complex* input, Complex* output) {
+void ifft(const int& size, complex_t* input, complex_t* output) {
     fftw_plan complex_inplace = fftw_plan_dft_1d(
         size, reinterpret_cast<fftw_complex*>(input),
         reinterpret_cast<fftw_complex*>(output), FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -164,46 +171,52 @@ ComplexVector ifft(const ComplexVector& data) {
 // ----------------------------------------------------------------------
 // -------------------- File import/export of Field
 // ----------------------------------------------------------------------
-void save_transmission(const char* filename, const Field& tx, const Field& rx) {
+void save_transmission(std::ostream& output, const Field& tx, const Field& rx) {
     assert(tx.modes() == rx.modes());
     assert(tx.samples() == rx.samples());
 
-    std::ofstream file(filename);
-    file.precision(16);
     for (int i = 0; i < tx.samples(); ++i) {
-        file << tx(0, i).real() << ',' << tx(0, i).imag();
+        for (int mode = 0; mode < tx.modes(); ++mode)
+            output << tx(mode, i).real() << ',' << tx(mode, i).imag() << ',';
+        for (int mode = 0; mode < rx.modes() - 1; ++mode)
+            output << rx(mode, i).real() << ',' << rx(mode, i).imag() << ',';
 
-        for (int mode = 1; mode < tx.modes(); ++mode)
-            file << ',' << tx(mode, i).real() << ',' << tx(mode, i).imag();
-        for (int mode = 0; mode < rx.modes(); ++mode)
-            file << ',' << rx(mode, i).real() << ',' << rx(mode, i).imag();
-
-        file << '\n';
+        output << rx(rx.modes() - 1, i).real() << ',';
+        output << rx(rx.modes() - 1, i).imag() << '\n';
     }
-    file.close();
 }
 
-void load_transmission(const char* filename, Field* tx, Field* rx) {
+void load_transmission(std::istream& input, Field* tx, Field* rx) {
     assert(tx->modes() == rx->modes());
     assert(tx->samples() == rx->samples());
 
-    std::ifstream file(filename);
-    char delimeter = ',';
-
     double re, im;
+    char delimeter = ',';
     for (int i = 0; i < tx->samples(); ++i) {
-        file >> re >> delimeter >> im;
-        tx->operator()(0, i) = Complex(re, im);
+        input >> re >> delimeter >> im;
+        tx->operator()(0, i) = complex_t(re, im);
 
         for (int mode = 1; mode < tx->modes(); ++mode) {
-            file >> delimeter >> re >> delimeter >> im;
-            tx->operator()(mode, i) = Complex(re, im);
+            input >> delimeter >> re >> delimeter >> im;
+            tx->operator()(mode, i) = complex_t(re, im);
         }
         for (int mode = 0; mode < tx->modes(); ++mode) {
-            file >> delimeter >> re >> delimeter >> im;
-            rx->operator()(mode, i) = Complex(re, im);
+            input >> delimeter >> re >> delimeter >> im;
+            rx->operator()(mode, i) = complex_t(re, im);
         }
     }
+}
+
+void save_transmission(const std::string& filename, const Field& tx, const Field& rx) {
+    std::ofstream file(filename);
+    file.precision(15);
+    save_transmission(file, tx, rx);
+    file.close();
+}
+
+void load_transmission(const std::string& filename, Field* tx, Field* rx) {
+    std::ifstream file(filename);
+    load_transmission(file, tx, rx);
     file.close();
 }
 }  // namespace focss
