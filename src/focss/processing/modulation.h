@@ -1,42 +1,48 @@
-#ifndef MODULATION_H_
-#define MODULATION_H_
+#ifndef FOCSS_PROCESSING_MODULATION_H_
+#define FOCSS_PROCESSING_MODULATION_H_
 
-#include <random>
 #include "focss/field.h"
+#include "focss/functions.h"
 
-const double rrc_roll_off = 0.01;
-const Complex gray_symbols_16qam[16] = {Complex(-3, -3) / sqrt(10),  // 0
-                                        Complex(-1, -3) / sqrt(10),  // 1
-                                        Complex(3, -3) / sqrt(10),   // 2
-                                        Complex(1, -3) / sqrt(10),   // 3
-                                        Complex(-3, -1) / sqrt(10),  // 4
-                                        Complex(-1, -1) / sqrt(10),  // 5
-                                        Complex(3, -1) / sqrt(10),   // 6
-                                        Complex(1, -1) / sqrt(10),   // 7
-                                        Complex(-3, 3) / sqrt(10),   // 8
-                                        Complex(-1, 3) / sqrt(10),   // 9
-                                        Complex(3, 3) / sqrt(10),    // A
-                                        Complex(1, 3) / sqrt(10),    // B
-                                        Complex(-3, 1) / sqrt(10),   // C
-                                        Complex(-1, 1) / sqrt(10),   // D
-                                        Complex(3, 1) / sqrt(10),    // E
-                                        Complex(1, 1) / sqrt(10)};   // F
+namespace focss {
+namespace pulse {
+ComplexVector sech(const int& n_samples, const double& width);
 
-Field random_16qam_symbols(const unsigned long& length,
-                           const double& baudrate = 1);
+ComplexVector rrc(const int& n_symbols,
+                  const int& oversampling,
+                  const double& roll_off);
 
-Field sech_pulse(const unsigned long& nodes_quantity, const double& width);
+ComplexVector lorentzian(const int& n_samples,
+                         const double& fwhm,
+                         const double& grid_step);
+}  // namespace pulse
 
-Field rrc_filter(const double& roll_off,
-                 const unsigned long& width,
-                 const unsigned long& osf);
+ComplexVector random_16qam_symbols(const int& n_symbols);
 
-Field rrc_modulate(const Field& symbols,
-                   const unsigned long& osf,
-                   const double& power);
-                   
-Field rrc_demodulate(const Field& signal, const unsigned long& osf);
+Field rrc_shaping(const Field& symbols, const int& osf, const double& gain = 1);
+Field rrc_sampling(const Field& signal, const int& osf, const double& gain = 1);
 
-void lowpass_inplace(Field& field, const double& cutoff_frequency);
+unsigned int demodulate_16qam(const complex_t& symbol);
+Field hard_decision_16qam(const Field& signal);
+Field soft_decision_16qam(const Field& signal, const double& uncertainty);
+Vector<int> hd_sequence_16qam(const Field& signal);
 
-#endif  // MODULATION_H_
+double bit_error_rate_16qam(const Field& tx, const Field& rx);
+double bit_error_rate_16qam(const Field& tx, const Field& rx, const int& cut);
+double symbol_error_rate_16qam(const Field& tx, const Field& rx, const int& cut);
+
+Field wdm_mux(const Vector<Field>& channels, const double& channel_bandwidth);
+
+Vector<Field> wdm_demux(const Field& field,
+                        const int& n_channels,
+                        const double& channel_bandwidth);
+
+Field wdm_select(const Field& field,
+                 const int& channel_index,
+                 const double& channel_bandwidth);
+
+Field frequency_shift(const Field& field, const double& frequency);
+Field bandpass_filter(const Field& field, const double& frequency);
+}  // namespace focss
+
+#endif  // FOCSS_PROCESSING_MODULATION_H_
