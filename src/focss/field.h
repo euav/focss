@@ -1,17 +1,51 @@
+ /*!
+ * @file
+ * @brief Class @ref Domain, @ref Field
+ */
 #ifndef FOCSS_FIELD_H_
 #define FOCSS_FIELD_H_
 
 #include <fftw3.h>
-#include "focss/core.h"
+#include "focss/definitions.h"
 
 namespace focss {
+
+/*!
+ *  @brief Domain structure represents size and frequency of Field.
+ *
+ *  Every Field instance constructed by Domain instance which responsible
+ *  for maintaing of number of samples, modes, time step between samples
+ *  and center frequency of field.
+ */
+struct Domain {
+    int modes; //!< number of modes, polarizations also considered as modes
+    int samples; //!< number of samples per mode
+    real_t time_step; //!< time step between consequent samples
+    real_t center_frequency; //!< center frequency of field
+
+    /*!
+     * @brief total number of samples in the field within all modes
+     * @return number of samples multiplied by number of modes
+     */
+    inline int size() const { return modes * samples; }
+
+    /*!
+     * @brief checks if two domains are identical
+     * @param other domain to compare with
+     * @return logical value if two domains are the same
+     */
+    inline bool operator==(const Domain& other) const {
+        return modes == other.modes && samples == other.samples &&
+               time_step == other.time_step &&
+               center_frequency == other.center_frequency;
+    }
+};
+
 class Field {
   public:
     Field();
-    explicit Field(const int& samples);
-    explicit Field(const int& modes, const int& samples);
-    Field(const ComplexVector& data);
-    Field(const ComplexVector& x_data, const ComplexVector& y_data);
+    explicit Field(const Domain& domain);
+    explicit Field(const Domain& domain, const ComplexVector& data);
 
     Field(const Field& other);
     Field(Field&& other);
@@ -21,73 +55,45 @@ class Field {
     ~Field();
 
   public:
-    ComplexVector vector();
-    Complex& operator()(const int& index);
-    Complex operator()(const int& index) const;
-    Complex& operator()(const int& mode, const int& sample);
-    Complex operator()(const int& mode, const int& sample) const;
+    complex_t operator[](const int& index) const;
+    complex_t operator()(const int& mode, const int& sample) const;
 
-    Complex& x(const int& sample);
-    Complex& y(const int& sample);
-    Complex x(const int& sample) const;
-    Complex y(const int& sample) const;
+    complex_t& operator[](const int& index);
+    complex_t& operator()(const int& mode, const int& sample);
 
-    ComplexVector x();
-    ComplexVector y();
-    ComplexVector x() const;
-    ComplexVector y() const;
-
-    ComplexVector x(const int& at_begin, const int& at_end);
-    ComplexVector y(const int& at_begin, const int& at_end);
-    ComplexVector x(const int& at_begin, const int& at_end) const;
-    ComplexVector y(const int& at_begin, const int& at_end) const;
+    ComplexVector operator()(const int& mode);
 
   public:
-    Field& operator*=(const Complex& multiplier);
-    Field& operator*=(const ComplexVector& multipliers);
-    Field operator*(const Complex& multiplier) const;
-    Field operator*(const ComplexVector& multipliers) const;
-
-    Field& operator+=(const Complex& summand);
-    Field& operator+=(const ComplexVector& summands);
-    Field operator+(const Complex& summand) const;
-    Field operator+(const ComplexVector& summands) const;
-
-    Field& operator-=(const Complex& subtrahend);
-    Field& operator-=(const ComplexVector& subtrahends);
-    Field operator-(const Complex& subtrahend) const;
-    Field operator-(const ComplexVector& subtrahends) const;
-
-  public:
-    double power(const int& sample) const;
-    double power(const int& mode, const int& sample) const;
-    double peak_power() const;
-    double average_power() const;
-    Field& peak_normalize(const double& power = 1);
-    Field& average_normalize(const double& power = 1);
+    real_t power(const int& sample) const;
+    real_t peak_power() const;
+    real_t average_power() const;
+    Field& peak_normalize(const real_t& power = 1);
+    Field& average_normalize(const real_t& power = 1);
 
   public:
     int size() const;
     int modes() const;
     int samples() const;
-    double get_time_step() const;
-    double get_sampling_rate() const;
-    double get_center_frequency() const;
-    void set_time_step(const double& time_step);
-    void set_sampling_rate(const double& rate);
-    void set_center_frequency(const double& center_frequency);
 
-    double dt() const;
-    double df() const;
-    double dw() const;
-    double t(const int& sample) const;
-    double f(const int& sample) const;
-    double w(const int& sample) const;
+    real_t duration() const;
+    real_t bandwidth() const;
+    real_t time_step() const;
+    real_t sampling_rate() const;
+    real_t center_frequency() const;
 
+    real_t dt() const;
+    real_t df() const;
+    real_t dw() const;
+    real_t t(const int& sample) const;
+    real_t f(const int& sample) const;
+    real_t w(const int& sample) const;
+
+    Domain domain() const;
+
+    RealVector time_grid() const;
+    RealVector frequency_grid() const;
     RealVector temporal_power() const;
     RealVector spectral_power() const;
-    RealVector time_grid() const;
-    RealVector frequecny_grid() const;
 
   public:
     Field upsample(const int& factor) const;
@@ -100,24 +106,59 @@ class Field {
     Field& ifft_inplace();
     Field fft() const;
     Field ifft() const;
-    Field& apply_filter(const ComplexVector& filter);
+    Field& filter_inplace(const ComplexVector& impulse_response);
+    Field filter(const ComplexVector& impulse_response) const;
+
+  public:
+    Field& operator*=(const real_t&);
+    Field& operator*=(const complex_t&);
+    Field& operator*=(const RealVector&);
+    Field& operator*=(const ComplexVector&);
+
+    Field& operator/=(const real_t&);
+    Field& operator/=(const complex_t&);
+    Field& operator/=(const RealVector&);
+    Field& operator/=(const ComplexVector&);
+
+    Field& operator+=(const Field&);
+    Field& operator-=(const Field&);
+
+    friend Field operator*(const Field&, const real_t&);
+    friend Field operator*(const Field&, const complex_t&);
+    friend Field operator*(const Field&, const RealVector&);
+    friend Field operator*(const Field&, const ComplexVector&);
+    friend Field operator*(const real_t&, const Field&);
+    friend Field operator*(const complex_t&, const Field&);
+    friend Field operator*(const RealVector&, const Field&);
+    friend Field operator*(const ComplexVector&, const Field&);
+
+    friend Field operator/(const Field&, const real_t&);
+    friend Field operator/(const Field&, const complex_t&);
+    friend Field operator/(const Field&, const RealVector&);
+    friend Field operator/(const Field&, const ComplexVector&);
+    friend Field operator/(const real_t&, const Field&);
+    friend Field operator/(const complex_t&, const Field&);
+    friend Field operator/(const RealVector&, const Field&);
+    friend Field operator/(const ComplexVector&, const Field&);
+
+    friend Field operator+(const Field&, const Field&);
+    friend Field operator-(const Field&, const Field&);
+
+  private:
+    void prepare_fft_plans();
+    void release_resources();
 
   private:
     int modes_;
     int samples_;
-    double time_step_;
-    double center_frequency_;
-    double* circular_frequencies_;
+    real_t time_step_;
+    real_t center_frequency_;
 
     int size_;
-    Complex* data_;
+    complex_t* data_;
 
     fftw_plan forward_inplace_;
     fftw_plan backward_inplace_;
-
-    void calculate_fftw_plans();
-    void calculate_frequency_grid();
-    void free_resources();
 };
 }  // namespace focss
 
